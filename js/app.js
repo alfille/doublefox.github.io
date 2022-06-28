@@ -57,7 +57,7 @@ class Game {
 
     left(i) {
         if ( i==0 ) {
-            return 1;
+            return H.value-1;
         } else {
             return i-1;
         }
@@ -65,22 +65,25 @@ class Game {
 
     right(i) {
         if ( i == H.value-1 ) {
-            return H.value - 2;
+            return 0;
         } else {
             return i+1;
         }
     }
 
-    move( hole ) {
+    move( holes ) {
         // inspections are 0-based
-        this.inspections[this.date] = hole ;
+        this.inspections[this.date] = holes ;
+        console.log(this.inspections);
         this.date += 1;
         // use previous fox locations
         let old_locations = this.fox_history[this.date-1].slice() ;
         let old_stats = this.stats_history[this.date-1].slice() ;
         // exclude inspected hole
-        old_locations[hole] = false ;
-        old_stats[hole] = 0. ;
+        holes.forEach( h => {
+            old_locations[h] = false ;
+            old_stats[h] = 0. ;
+            });
 
         let current_fox = [] ;
         let current_stats = [] ;
@@ -159,6 +162,16 @@ class Table {
         this.control_row();
         this.update();
     }
+    
+    check(hole) {
+        let h = [...this.tbody.lastElementChild
+            .querySelectorAll("input")]
+            .filter( c=>c.checked )
+            .map(c=>parseInt(c.getAttribute("data-n")));
+        if ( h.length == 2 ) {
+            T.move(h) ;
+        }
+    }
 
     control_row() {
         let f = G.foxes ;
@@ -172,9 +185,10 @@ class Table {
                 d.appendChild(b);
             } else {
                 d.innerHTML = (f[i-1] ? "&#129418" : "&nbsp;") + "<br>" ;
-                let b = document.createElement("button");
-                b.innerText = "?" ;
-                b.onclick = () => T.move(i-1) ;
+                let b = document.createElement("input");
+                b.type = "checkbox";
+                b.onclick = () => T.check(i-1) ;
+                b.setAttribute("data-n",i-1);
                 d.appendChild(b);
             }
             r.appendChild(d);
@@ -205,8 +219,8 @@ class Table {
     }
         
 
-    move(hole) { // hole 0-based
-        G.move(hole);
+    move(holes) { // hole 0-based
+        G.move(holes);
         this.remove_row();
         this.static_row();
         if ( G.number == 0 ) {
@@ -225,7 +239,7 @@ class Table {
             let d = document.createElement("td");
             if ( i==0 ) {
                 d.innerHTML = `Day ${G.day-1}`;
-            } else if ( m == h ) {
+            } else if ( m.indexOf(h) > -1 ) {
                 d.innerHTML = "&#x274c" ;
             } else if (f[h]) {
                 d.innerHTML = "&#129418" ;
