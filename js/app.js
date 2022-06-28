@@ -55,41 +55,35 @@ class Game {
         this.inspections = [] ;
     }
 
-    left(i) {
-        if ( i==0 ) {
-            return H.value-1;
-        } else {
-            return i-1;
-        }
+    escapes (i) { // returns an array of landing spots
+        return [
+            i==0 ? H.value-1 : i-1,
+            i==H.value -1 ? 0 : i+1,
+            ] ;
     }
 
-    right(i) {
-        if ( i == H.value-1 ) {
-            return 0;
-        } else {
-            return i+1;
-        }
-    }
-
-    move( holes ) {
+    move( holes ) { // holes is an array
         // inspections are 0-based
         this.inspections[this.date] = holes ;
-        console.log(this.inspections);
         this.date += 1;
+
         // use previous fox locations
         let old_locations = this.fox_history[this.date-1].slice() ;
         let old_stats = this.stats_history[this.date-1].slice() ;
+
         // exclude inspected hole
         holes.forEach( h => {
             old_locations[h] = false ;
             old_stats[h] = 0. ;
             });
 
-        let current_fox = [] ;
-        let current_stats = [] ;
+        let current_fox = Array(H.value).fill(false) ;
+        let current_stats = Array(H.value).fill(0) ;
+        
         for ( let h = 0 ; h < H.value ; ++h ) {
-            current_fox[h] = old_locations[this.left(h)] || old_locations[this.right(h)] ;
-            current_stats[h] = old_stats[this.left(h)]*.5 + old_stats[this.right(h)]*.5 ;
+            let e = this.escapes(h) ; // where fox can go
+            e.forEach( ee => current_fox[h] ||= old_locations[ee] );
+            e.forEach( ee => current_stats[h] += old_stats[ee]/e.length );
         }
         // store
         this.fox_history[this.date] = current_fox;
@@ -198,7 +192,6 @@ class Table {
     }
 
     back() {
-        console.log(G.day);
         if ( G.day < 2 ) {
             this.start() ;
         } else {
@@ -211,7 +204,7 @@ class Table {
     }
 
     update() {
-        document.getElementById("raided").value=G.day;
+        document.getElementById("raided").value=G.day*2;
         if ( this.stats ) {
             let p = this.thead.firstElementChild.childNodes;
             G.stats.forEach( (v,i) => p[i+1].innerText = v.toFixed(3) );
