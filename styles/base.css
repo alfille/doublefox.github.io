@@ -99,9 +99,9 @@ table {
     z-index: 1;
 }
 .svg_hole {
-    fill: tan;
+    fill: #8cd2cd;
 }
-#old_hole {
+.old_hole {
     fill: #FFCCFF;
     stroke: purple;
     stroke-width: 4;
@@ -125,13 +125,13 @@ table {
 }
 #top_back, #bottom_back {
     x: 700;
-    y: -980;
+    y: -1130;
     rx: 10;
     width: 250px;
     height: 150px;
 }
 #bottom_back {
-    fill: tan;
+    fill: #8cd2cd;
 }
 #top_back {
     fill: transparent;

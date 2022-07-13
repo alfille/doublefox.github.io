@@ -114,6 +114,10 @@ class Game {
     get day() {
         return this.date;
     }
+
+    get type() {
+        return "circlex" ;
+    }
 }
 var G = new Game();
 
@@ -133,46 +137,78 @@ class GardenView {
     }
 
     add_history_row(s) {
-        let Th = s.map( (_,i) => `<g id=${"bottom_"+i}><use href="#old_hole" transform="rotate(${360.*i/s.length})" /></g>`).join("");
-        let Tf = s.map( (ss,i) => `<g transform="rotate(${360.*i/s.length})"><text class="old_fox" x="42" y="580" rotate="180">${ss}</text></g>`).join("");
-        this.history.push( `<circle cx="0" cy="0" r="600" stroke="grey" stroke-width="3" fill="none" />
-            <def><circle id="old_hole" cx="0" cy="600" r="50" /></def>
-            ${Th}${Tf}`);
+        if ( G.type == "circle" ) {
+            let Th = s.map( (_,i) => `<circle class="old_hole" cx="0" cy="600" r="50" transform="rotate(${360.*i/s.length})" />`).join("");
+            let Tf = s.map( (ss,i) => `<g transform="rotate(${360.*i/s.length})"><text class="old_fox" x="42" y="580" rotate="180">${ss}</text></g>`).join("");
+            this.history.push( `<circle cx="0" cy="0" r="600" stroke="grey" stroke-width="3" fill="none" />${Th}${Tf}`);
+        } else {
+            let Th = s.map( (_,i) => `<circle class="old_hole" cx="-800" cy="-600" r="50"  transform="translate(${1600.*i/(s.length-1)})" />`).join("");
+            let Tf = s.map( (ss,i) => `<text class="old_fox" x="-841" y="-575" transform="translate(${1600.*i/(s.length-1)})">${ss}</text>`).join("");
+            this.history.push( `<line x1="-800" y1="-600" x2="800" y2="-600" stroke="grey" stroke-width="3" />${Th}${Tf}`);
+        }
     }
         
     show_history() {
         if ( this.history.length == 0 ) {
             return "";
+        } else if ( G.type=="circle" ) {
+            return this.history.reduce( (t,x) => `<g transform="scale(.86) rotate(5)">${t}</g>${x}` );
+        } else {
+            return this.history.reduce( (t,x) => `<g transform="translate(0,100)">${t}</g>${x}` );
         }
-        return this.history.reduce( (t,x) => `<g transform="scale(.86) rotate(5)">${t}</g>${x}` );
     }
 
     create_svg(s) {
         let f = G.foxes ;
-        let Th = s.map( (_,i) => `<circle class="svg_hole" cx="0" cy="800" r="150" transform="rotate(${360.*i/s.length})"/>`).join("");
-        let Tf = s.map( (ss,i) => `<g transform="rotate(${360.*i/s.length})"><text class="svg_fox" x="125" y="740" rotate="180">${ss}</text></g>`).join("");
-        let Tl = f.map( (ff,i) => `<use href=${ff?"#svg_larrow":"#svg_nofox"} transform="rotate(${360.*i/f.length})" />`).join("");
-        let Tr = f.map( (ff,i) => `<use href=${ff?"#svg_rarrow":"#svg_nofox"} transform="rotate(${360.*i/f.length})" />`).join("");
-        let Tc = s.map( (_,i) => `<circle class="svg_click" cx="0" cy="800" r="150" id=${"top_"+i} transform="rotate(${360.*i/s.length})" onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`).join("");
-        return `<svg viewBox="-1000 -1000 2000 2000"> preserveAspectRatio="xMidYMid meet" width="100%"
-            <circle cx="0" cy="0" r="803" stroke="grey" stroke-width="3" fill="none" />
-            <circle cx="0" cy="0" r="797" stroke="grey" stroke-width="3" fill="none" />
-            <def>
-                <text id="svg_rarrow" x="100" y="790" rotate="-15">&#8594;</text>
-                <text id="svg_larrow" x="-300" y="740" rotate="15">&#8592;</text>
-                <circle id="svg_click" cx="0" cy="800" r="150" />
-            </def>
-            ${Th}
-            ${Tf}
-            ${Tl}
-            ${Tr}
-            ${Tc}
-            ${this.show_history()}
-            <rect id="bottom_back" />
-            <text id="text_back" x="720" y="-870">Back</text />
-            <rect id="top_back"  onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>
-            Sorry, your browser does not support inline SVG.  
-        </svg>` ;
+        if ( G.type == "circle" ) {
+            let Th = s.map( (_,i) => `<circle class="svg_hole" cx="0" cy="800" r="150" transform="rotate(${360.*i/s.length})"/>`).join("");
+            let Tf = s.map( (ss,i) => `<g transform="rotate(${360.*i/s.length})"><text class="svg_fox" x="125" y="740" rotate="180">${ss}</text></g>`).join("");
+            let Tl = f.map( (ff,i) => `<use href=${ff?"#svg_larrow":"#svg_nofox"} transform="rotate(${360.*i/f.length})" />`).join("");
+            let Tr = f.map( (ff,i) => `<use href=${ff?"#svg_rarrow":"#svg_nofox"} transform="rotate(${360.*i/f.length})" />`).join("");
+            let Tc = s.map( (_,i) => `<circle class="svg_click" cx="0" cy="800" r="150" id=${"top_"+i} transform="rotate(${360.*i/s.length})" onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`).join("");
+            return `<svg viewBox="-1000 -1000 2000 2000"> preserveAspectRatio="xMidYMid meet" width="100%"
+                <circle cx="0" cy="0" r="803" stroke="grey" stroke-width="3" fill="none" />
+                <circle cx="0" cy="0" r="797" stroke="grey" stroke-width="3" fill="none" />
+                <def>
+                    <text id="svg_rarrow" x="100" y="790" rotate="-15">&#8594;</text>
+                    <text id="svg_larrow" x="-300" y="740" rotate="15">&#8592;</text>
+                </def>
+                ${Th}
+                ${Tf}
+                ${Tl}
+                ${Tr}
+                ${Tc}
+                ${this.show_history()}
+                <rect id="bottom_back" />
+                <text id="text_back" x="720" y="-870">Back</text />
+                <rect id="top_back"  onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>
+                Sorry, your browser does not support inline SVG.  
+            </svg>` ;
+        } else { // linear
+            let Th = s.map( (_,i) => `<circle class="svg_hole" cx="-800" cy="-800" r="150" transform="translate(${1600.*i/(s.length-1)})"/>`).join("");
+            let Tf = s.map( (ss,i) => `<text class="svg_fox" x="-920" y="-740" transform="translate(${1600.*i/(s.length-1)})">${ss}</text>`).join("");
+            let Tl = f.map( (ff,i) => i==0?"":`<use href=${ff?"#svg_larrow":"#svg_nofox"} transform="translate(${1600.*i/(s.length-1)})" />`).join("");
+            let Tr = f.map( (ff,i) => i==(s.length-1)?"":`<use href=${ff?"#svg_rarrow":"#svg_nofox"} transform="translate(${1600.*i/(s.length-1)})" />`).join("");
+            let Tc = s.map( (_,i) => `<circle class="svg_click" cx="-800" cy="-800" r="150" transform="translate(${1600.*i/(s.length-1)})" id=${"top_"+i}  onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`).join("");
+            return `<svg viewBox="-1000 -1150 2000 1250"> preserveAspectRatio="xMidYMid meet" width="100%"
+                <line x1="-800"y1="-802" x2="800" y2 = "-802" stroke="grey" stroke-width="3"  />
+                <line x1="-800"y1="-799" x2="800" y2 = "-799" stroke="grey" stroke-width="3"  />
+                <def>
+                    <text id="svg_rarrow" x="-800" y="-660">&#8594;</text>
+                    <text id="svg_larrow" x="-1000" y="-660">&#8592;</text>
+                </def>
+                ${Th}
+                ${Tf}
+                ${Tl}
+                ${Tr}
+                ${Tc}
+                ${this.show_history()}
+                <rect id="bottom_back" />
+                <text id="text_back" x="720" y="-1020">Back</text />
+                <rect id="top_back"  onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>
+                Sorry, your browser does not support inline SVG.  
+            </svg>` ;
+        }
     }
 
     dimension_control() {
@@ -257,9 +293,11 @@ class Table {
     }
 
     checked(hole) {
-        return [...this.tbody.lastElementChild.querySelectorAll("input")]
-            .filter( c=>parseInt(c.getAttribute("data-n"))==hole )[0]
-            .checked ;
+        let inp = [...this.tbody.lastElementChild.querySelectorAll("input")] ;
+        if ( inp.length == 0 ) {
+            return false ;
+        }
+        return inp.filter( c=>parseInt(c.getAttribute("data-n"))==hole )[0].checked ;
     }
 
     control_row() {
