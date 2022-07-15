@@ -19,20 +19,26 @@
                 </div>
                 <div id="control">
                     <label>Choose number of &#129418 holes: <input type="number" id="holes" min=3 max=12 step=1 value=5 onchange="changeInput()" title="Choose number of foxholes"></label>
-                    <label>Show probabilities: <input type="checkbox" id="stats" onchange="T.statchange()"></label>
+                    <label>Show probabilities: <input type="checkbox" id="stats" onchange="TV.statchange()"></label>
                     <fieldset>
                         <legend>Status</legend>
                         <label>Foxholes raided: <input type=text size=2 readonly id="raided"></label>
                     </fieldset>
-                    <button type="button" onclick="T.start()">Reset game</button>
                 </div>
             </div>
         </header>
-        <div class="working">
-            <div id="switch">
-                <button type="button" id="Btable" onclick="O.Garden(false)" title="Table view">&#128196;</button>
-                <button type="button" id="Bgarden" onclick="O.Garden(true)" title="Garden view">&#127969;</button>
+        <div id="switch">
+            <div>
+                <button type="button" id="Btable" onclick="O.Garden(false)" title="Table view">&nbsp;&#128196;&nbsp;</button>
+                <button type="button" id="Bgarden" onclick="O.Garden(true)" title="Garden view">&nbsp;&#127969;&nbsp;</button>
             </div>
+            <button type="button" class="hidden">&nbsp;</button>
+            <button type="button" id="Bback" class="round" onclick="TV.back()" title="Undo last move">Undo</button>
+            <button type="button" class="hidden">&nbsp;</button>
+            <button type="button" id="Bnew" class="round" onclick="G.start()" title="New game">New</button>
+            <button type="button" id="Bchoose" class="round" onclick="O.Garden(true)" title="Choose game type...">&#127969;</button>
+        </div>
+        <div class="working">
             <div id="Ttable">
                 <table>
                     <caption>
