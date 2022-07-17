@@ -49,6 +49,9 @@ header button {
     flex-wrap: nowrap;
     justify-content: left;
 }
+#holes {
+    width: 2em;
+}
 #switch {
 	display: inline-flex;
 	align-items: center;
@@ -133,4 +136,20 @@ caption {
 .old_fox {
     fill: black;
     font-size: 66px;
+}
+#choose label, #rules {
+    color: white;
+}
+#choose legend, #rules legend {
+    background-color: teal;
+}
+#choose button {
+    background-color: #e6f2ff;
+    radius: 5px;
+}
+#holesper, #poisoneddays, #rvisits, #rholes {
+    width: 2em;
+}
+#rules h3 {
+    color: yellow;
 }

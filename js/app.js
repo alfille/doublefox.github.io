@@ -83,7 +83,7 @@ class GardenView {
     }
 }
 
-class GardenViewCircle extends GardenView {
+class GardenView_Circular extends GardenView {
     add_history_row(s) {
         let Th = s.map( (_,i) => `<circle class="old_hole" cx="0" cy="600" r="50" transform="rotate(${360.*i/s.length})" />`).join("");
         let Tf = s.map( (ss,i) => `<g transform="rotate(${360.*i/s.length})"><text class="old_fox" x="42" y="580" rotate="180">${ss}</text></g>`).join("");
@@ -100,10 +100,11 @@ class GardenViewCircle extends GardenView {
 
     create_svg(s) {
         let f = G.foxes ;
+        let p = G.poison_list;
         let Th = s.map( (_,i) => `<circle class="svg_hole" cx="0" cy="800" r="150" transform="rotate(${360.*i/s.length})"/>`).join("");
         let Tf = s.map( (ss,i) => `<g transform="rotate(${360.*i/s.length})"><text class="svg_fox" x="125" y="740" rotate="180">${ss}</text></g>`).join("");
-        let Tl = f.map( (ff,i) => `<use href=${ff?"#svg_larrow":"#svg_nofox"} transform="rotate(${360.*i/f.length})" />`).join("");
-        let Tr = f.map( (ff,i) => `<use href=${ff?"#svg_rarrow":"#svg_nofox"} transform="rotate(${360.*i/f.length})" />`).join("");
+        let Tl = f.map( (ff,i) => `<use href=${(ff&&p.indexOf(i)>-1)?"#svg_larrow":"#svg_nofox"} transform="rotate(${360.*i/f.length})" />`).join("");
+        let Tr = f.map( (ff,i) => `<use href=${(ff&&p.indexOf(i)>-1)?"#svg_rarrow":"#svg_nofox"} transform="rotate(${360.*i/f.length})" />`).join("");
         let Tc = s.map( (_,i) => `<circle class="svg_click" cx="0" cy="800" r="150" id=${"top_"+i} transform="rotate(${360.*i/s.length})" onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`).join("");
         return `<svg viewBox="-1000 -1000 2000 2000"> preserveAspectRatio="xMidYMid meet" width="100%"
             <circle cx="0" cy="0" r="803" stroke="grey" stroke-width="3" fill="none" />
@@ -124,7 +125,7 @@ class GardenViewCircle extends GardenView {
 
 }
 
-class GardenViewLine extends GardenView {
+class GardenView_Linear extends GardenView {
     add_history_row(s) {
         let Th = s.map( (_,i) => `<circle class="old_hole" cx="0" cy="200" r="50"  transform="translate(${i*350})" />`).join("");
         let Tf = s.map( (ss,i) => `<text class="old_fox" x="-41" y="225" transform="translate(${i*350})">${ss}</text>`).join("");
@@ -214,7 +215,7 @@ class TableView {
         let h = [...this.tbody.lastElementChild.querySelectorAll("input")]
             .filter( c=>c.checked )
             .map(c=>parseInt(c.getAttribute("data-n")));
-        if ( h.length == G.holes_per_day ) {
+        if ( h.length == O.visits ) {
             this.move(h) ;
         }
     }
@@ -265,7 +266,7 @@ class TableView {
     }
 
     update() {
-        document.getElementById("raided").value=G.day*2;
+        document.getElementById("raided").value=G.day*O.visits;
         if ( this.stats ) {
             let p = this.thead.firstElementChild.childNodes;
             G.stats.forEach( (v,i) => p[i+1].innerText = v.toFixed(3) );
@@ -291,8 +292,8 @@ class TableView {
             return foxes.map( (_,i) => i&1 ? "&#128077;" : "&#128516;" ) ;
         } else {
             let s = foxes.map( f => f?"&#129418;":"&nbsp;" ) ;
-            moves.forEach( m => s[m] = "&#x274c;" );
-            poisons.forEach( p => s[p] = "&#9760;" );
+            moves.forEach( m => s[m] = "&#128064;" );
+            poisons.forEach( p => s[p] = "&#9763;" );
             return s ;
         }
     } 
@@ -334,7 +335,11 @@ class TableView {
     }
     
 }
+
 class Game {
+    constructor () {
+    }
+
     start () {
         this.inspections = [];
         this.date = 0;
@@ -346,14 +351,16 @@ class Game {
         TV.start() ;
     }
 
-    poison_array() { // returns true/false array
-        let p = Array(H.value).fill(false);
-        this.inspections.slice(-this.poison_days).forEach( d => d.forEach( i => p[i]=true ) ) ;
-        return p ; 
-    }
-
     get poison_list() { // returns just the elements as an array
         return this.poison_array().map( (p,i) => p?i:-1 ).filter( i => i>-1 ) ;
+    }
+
+    poison_array() { // returns true/false array
+        let p = Array(H.value).fill(false);
+        if ( O.poison_days > 0 ) {
+            this.inspections.slice(-O.poison_days).forEach( d => d.forEach( i => p[i]=true ) ) ;
+        }
+        return p ; 
     }
 
     move( inspect ) { // holes is an array
@@ -377,10 +384,11 @@ class Game {
         let plist = this.poison_array() ;
         
          plist.forEach( (p,h) => {
-             if ( !p ) {
-                let e = this.fox_moves(h).filter( ee=> !plist[ee] ) ; // where fox can go
+            if ( !p ) {
+                let esc = this.fox_moves(h) ; // all moves
+                let e = esc.filter( ee=> !plist[ee] ) ; // exclude poisoned
                 e.forEach( ee => current_fox[h] ||= old_locations[ee] );
-                e.forEach( ee => current_stats[h] += old_stats[ee]/e.length );
+                e.forEach( ee => current_stats[h] += old_stats[ee]/esc.length );
             }
             });
 
@@ -419,58 +427,157 @@ class Game {
 }
 
 class Game_Linear extends Game {
+   constructor() {
+        super() ;
+        TV = new TableView() ;
+        GV = new GardenView_Linear() ;
+    }
+
     fox_moves (h) { // returns an array of landing spots
         return [ h-1, h+1 ].filter( hh => hh>=0 ).filter( hh => hh<H.value) ;
     }
 }
 
 class Game_Circular extends Game {
+   constructor() {
+        super() ;
+        TV = new TableView() ;
+        GV = new GardenView_Circular() ;
+    }
+
     fox_moves (h) { // returns an array of landing spots
         return [ h-1, h+1 ].map( hh => (hh+H.value)%H.value );
     }
 }
 
-class Game_Fox extends Game_Linear {
-    constructor() {
-        super() ;
-        TV = new TableView() ;
-        GV = new GardenViewLine() ;
-    }
-    
-    get holes_per_day() {
-        return 1 ;
-    }
-}
-var G = new Game_Fox();
-G.start() ;
-
-
-function changeInput() {
-    if ( H.change ) {
-        G.start() ;
-    }
-}
-
 class Overlay {
 	constructor () {
-		this.Garden( true ) ;
+        // Parameters  -- standard game first
+        this.classic() ;
 	}
-	
-	Garden( onstate ) {
+
+    classic() {
+        // Parameters  -- standard game first
+        this.geometry = "linear";
+        this.visits = 1;
+        this.poison_days = 0;
+    }
+
+    circle () {
+        this.geometry = "circular";
+        this.visits = 2;
+        this.poison_days = 0;
+    }
+
+    poison() {
+        this.geometry = "circular";
+        this.visits = 1;
+        this.poison_days = 1;
+    }
+
+    custom() {
+        this.geometry = document.querySelector('input[name="arrange"]:checked').value;
+        this.visits = document.getElementById("holesper").value ;
+        this.poison_days = document.getElementById("poisoneddays").value
+    }
+
+    fillin() { // updates rule and choose to match current game settings
+        // holes
+        document.getElementById("rholes").value = H.value;
+        // visits
+        document.getElementById("rvisits").value = this.visits;
+        document.getElementsById("holesper").value = this.visits;
+        // geometry
+        switch (this.geometry) {
+            case "circular":
+                document.getElementById("rarrange").innerHTML = `The ${H.value} foxholes are arranged in a circle.`;
+                break;
+            case "linear":
+            default:
+                document.getElementById("rarrange").innerHTML = `The ${H.value} foxholes are arranged in a line. The fox cannot move past either end of the line.`;
+                break;
+            }
+            document.querySelectorAll('input[name="arrange"]').forEach( a => a.checked=(a.value==this.geometry) );
+        // poison
+        if ( this.poison_days==0 ) {
+            document.getElementById("rpoison").innerHTML = `Organic! No poisoning. The fox can move back in that very night after your daytime inspection.`;
+        } else {
+            document.getElementById("rpoison").innerHTML = `You are a poisoner! The hole is uninhabitable for ${this.poison_days} day(s) after your inspection.`;
+        }
+        document.getElementsById("poisoneddays").value = this.poison_days;
+    }
+
+    select(game_type) {
+        switch( game_type) {
+            case "classic":
+                this.classic();
+                break ;
+            case "circle":
+                this.circle();
+                break;
+            case "poison":
+                this.poison();
+                break;
+            case "custom":
+                this.custom();
+                break;
+            default:
+        }
+        // fill in fields
+        this.game();
+    }
+        
+    hide() {
+        ["svg","Ttable","choose","rules"].forEach( d => document.getElementById(d).style.display="none" );
+    }
+
+    choose() {
+        this.hide() ;
+        document.getElementById("choose").style.display="block";
+    }
+
+    rules() {
+        this.hide() ;
+        this.fillin();
+        document.getElementById("rules").style.display="block";
+    }
+
+    game() {
+        this.garden(this.onstate)
+    }
+
+	garden( onstate ) {
+        this.hide();
+        this.onstate = onstate ;
 		if ( onstate ) {
 			document.getElementById("svg").style.display="block";
-			document.getElementById("Ttable").style.display="none";
 			document.getElementById("Bgarden").style.backgroundColor = "white";
 			document.getElementById("Btable").style.backgroundColor = "grey";
 		} else {
-			document.getElementById("svg").style.display="none";
 			document.getElementById("Ttable").style.display="block";
 			document.getElementById("Bgarden").style.backgroundColor = "grey";
 			document.getElementById("Btable").style.backgroundColor = "white";
 		}
+        switch( this.geometry ) {
+            case "linear":
+                G = new Game_Linear() ;
+                break ;
+            case "circular":
+            default:
+                G = new Game_Circular() ;
+                break ;
+            }
+        G.start();
 	}
+
+    changeInput() {
+        if ( H.change ) {
+            G.start() ;
+        }
+    }
 }
 var O = new Overlay();
+O.garden(true) ;
 
 // Application starting point
 window.onload = () => {

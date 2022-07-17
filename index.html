@@ -18,7 +18,7 @@
                     <a href='https://github.com/alfille/doublefox.github.io'><img src="images/icon.png"></a>
                 </div>
                 <div id="control">
-                    <label>Choose number of &#129418 holes: <input type="number" id="holes" min=3 max=12 step=1 value=5 onchange="changeInput()" title="Choose number of foxholes"></label>
+                    <label>Choose number of &#129418 holes: <input type="number" id="holes" min=3 max=12 step=1 value=5 onchange="O.changeInput()" title="Choose number of foxholes"></label>
                     <label>Show probabilities: <input type="checkbox" id="stats" onchange="TV.statchange()"></label>
                     <fieldset>
                         <legend>Status</legend>
@@ -29,14 +29,15 @@
         </header>
         <div id="switch">
             <div>
-                <button type="button" id="Btable" onclick="O.Garden(false)" title="Table view">&nbsp;&#128196;&nbsp;</button>
-                <button type="button" id="Bgarden" onclick="O.Garden(true)" title="Garden view">&nbsp;&#127969;&nbsp;</button>
+                <button type="button" id="Btable" onclick="O.garden(false)" title="Table view">&nbsp;&#128196;&nbsp;</button>
+                <button type="button" id="Bgarden" onclick="O.garden(true)" title="Garden view">&nbsp;&#127969;&nbsp;</button>
             </div>
             <button type="button" class="hidden">&nbsp;</button>
-            <button type="button" id="Bback" class="round" onclick="TV.back()" title="Undo last move">Undo</button>
+            <button type="button" class="round" onclick="TV.back()" title="Undo last move">Undo</button>
             <button type="button" class="hidden">&nbsp;</button>
-            <button type="button" id="Bnew" class="round" onclick="G.start()" title="New game">New</button>
-            <button type="button" id="Bchoose" class="round" onclick="O.Garden(true)" title="Choose game type...">&#127969;</button>
+            <button type="button" class="round" onclick="O.game()" title="New game">New</button>
+            <button type="button" class="round" onclick="O.rules()" title="Brief game rules">Rules</button>
+            <button type="button" class="round" onclick="O.choose()" title="Choose game type...">Choose...</button>
         </div>
         <div class="working">
             <div id="Ttable">
@@ -51,6 +52,48 @@
                 </table>
             </div>
             <div id="svg">
+            </div>
+            <div id="choose">
+                <fieldset>
+                    <legend>Standard Games</legend>
+                    <button type="button" class="standard" onclick="O.select('classic')" title="Arranged in a line, one look/day, no poisoning">Classic foxholes</button>
+                    <button type="button" class="standard" onclick="O.select('circle')" title="Arranged in a circle, two looks/day, no poisoning">Circle foxholes</button>
+                    <button type="button" class="standard" onclick="O.select('poison')" title="Arranged in a circle, one look/day, poisoned 1 day">Poison foxholes</button>
+                </fieldset>
+                <br><br>
+                <fieldset>
+                    <legend>Custom Game</legend>
+                    <fieldset>
+                        <legend>Hole arrangement</legend>
+                        <label>Holes in a <b>line</b><input type="radio" name="arrange" value="linear" checked></label>
+                        <label>Holes in a <b>circle</b><input type="radio" name="arrange" value="circular"></label>
+                    </fieldset>
+                    <br>
+                    <label>Inspections per day: <input type="number" id="holesper" min=1 max=4 value=1></label><br>
+                    <label>Days hole is poisoned after inspection: <input type="number" id="poisoneddays" min=0 max=4 value=0></label><br>
+                    <button type="button" class="standard" onclick="O.select('custom')" title="Use custom game parameters">Try Custom Game</button>
+                </fieldset>
+            </div>
+            <div id="rules">
+                <fieldset>
+                    <legend>Brief Foxhole game rules</legend>
+                    <h3>Premise</h3>
+                    A wiley fox is in your garden, hiding in a fox hole.
+                    There are <input type="number" id="rholes" readonly> foxholes in your garden.
+                    <h3>Fox moves &#129418;</h3>
+                    Each night the fox has to move to an adjacent hole. It can't stay in it's current hole.
+                    <h3>Your moves &#128064;</h3>
+                    Each day, you choose holes to inspect and catch the fox if it is there.
+                    You look into <input type="number" id="rvisits" readonly> holes each day.
+                    <h3>Arrangement</h3>
+                    <p id="rarrange"></p>
+                    <h3>Poison &#9763;</h3>
+                    <p id="rpoison"></p>
+                    <h3>Goal</h3>
+                    Inspect holes in the right order to catch even the sneakiest fox.
+                    <br>
+                    <button type="button" class="round" onclick="O.game()" title="back to playing game">Ok</button>
+               </fieldset>
             </div>
         </div>
         <!-- scripts -->
