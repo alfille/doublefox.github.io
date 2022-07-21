@@ -35,7 +35,7 @@
             <button type="button" class="hidden">&nbsp;</button>
             <button type="button" class="round" onclick="TV.back()" title="Undo last move">Undo</button>
             <button type="button" class="hidden">&nbsp;</button>
-            <button type="button" class="round" onclick="O.game()" title="New game">New</button>
+            <button type="button" class="round" onclick="O.newgame()" title="New game">New</button>
             <button type="button" class="round" onclick="O.rules()" title="Brief game rules">Rules</button>
             <button type="button" class="round" onclick="O.choose()" title="Choose game type...">Choose...</button>
         </div>
@@ -44,6 +44,7 @@
                 <table>
                     <caption>
                         Doublefox game play
+                        <button type="button" onclick="O.layout()">Show layout</button>
                     </caption>
                     <thead>
                     </thead>
@@ -51,7 +52,7 @@
                     </tbody>
                 </table>
             </div>
-            <div id="svg">
+            <div id="svg_view" class="svg">
             </div>
             <div id="choose">
                 <fieldset>
@@ -78,10 +79,10 @@
                 <fieldset>
                     <legend>Brief Foxhole game rules</legend>
                     <h3>Premise</h3>
-                    A wiley fox is in your garden, hiding in a fox hole.
-                    There are <input type="number" id="rholes" readonly> foxholes in your garden.
+                    A wily fox is in your garden, hiding in a fox hole.
+                    There are <input type="number" id="rholes" readonly> fox holes in your garden.
                     <h3>Fox moves &#129418;</h3>
-                    Each night the fox has to move to an adjacent hole. It can't stay in it's current hole.
+                    Each night the fox has to move to an adjacent hole. It can't stay in its current hole.
                     <h3>Your moves &#128064;</h3>
                     Each day, you choose holes to inspect and catch the fox if it is there.
                     You look into <input type="number" id="rvisits" readonly> holes each day.
@@ -92,8 +93,11 @@
                     <h3>Goal</h3>
                     Inspect holes in the right order to catch even the sneakiest fox.
                     <br>
-                    <button type="button" class="round" onclick="O.game()" title="back to playing game">Ok</button>
                </fieldset>
+            </div>
+            <div id="layout">
+                <div id="svg_layout" class="svg">
+                </div>
             </div>
         </div>
         <!-- scripts -->

@@ -40,6 +40,13 @@ class Holes {
         return ( h != this.holes ) ;
     }
 
+    set value(h) {
+        if ( h !== this.holes ) {
+            this.item.value = h;
+        }
+        this.read() ;
+    }
+
     get value() {
         return this.holes;
     }
@@ -48,7 +55,7 @@ var H = new Holes() ;
 
 class GardenView {
     constructor() {
-        this.svg = document.getElementById("svg");
+        this.svg = document.getElementById("svg_view");
         this.head = document.getElementById("top");
         window.onresize = this.dimension_control();
     }
@@ -81,12 +88,19 @@ class GardenView {
         TV.click(hole);
         target.style.strokeWidth = TV.checked(hole) ? "30" : "10" ;
     }
+
+    layout() {
+        let lay = document.getElementById("svg_layout");
+        lay.innerHTML = this.create_svg( G.foxes.map ( (_,i) => i+"" ), false );
+        lay.addEventListener('click', () => O.resumegame() );
+        
+    }
 }
 
 class GardenView_Circular extends GardenView {
     add_history_row(s) {
-        let Th = s.map( (_,i) => `<circle class="old_hole" cx="0" cy="600" r="50" transform="rotate(${360.*i/s.length})" />`).join("");
-        let Tf = s.map( (ss,i) => `<g transform="rotate(${360.*i/s.length})"><text class="old_fox" x="42" y="580" rotate="180">${ss}</text></g>`).join("");
+        let Th = s.map( (_,i) => `<circle class="old_hole" cx="0" cy="-600" r="50" transform="rotate(${360.*i/s.length})" />`).join("");
+        let Tf = s.map( (ss,i) => `<text class="old_fox" x="0" y="-580" transform="rotate(${360.*i/s.length})">${ss}</text><`).join("");
         this.history.push( `<circle cx="0" cy="0" r="600" stroke="grey" stroke-width="3" fill="none" />${Th}${Tf}`);
     }
         
@@ -98,27 +112,33 @@ class GardenView_Circular extends GardenView {
         }
     }
 
-    create_svg(s) {
+    create_svg(s, show_arrows=true) {
         let f = G.foxes ;
         let p = G.poison_list;
-        let Th = s.map( (_,i) => `<circle class="svg_hole" cx="0" cy="800" r="150" transform="rotate(${360.*i/s.length})"/>`).join("");
-        let Tf = s.map( (ss,i) => `<g transform="rotate(${360.*i/s.length})"><text class="svg_fox" x="125" y="740" rotate="180">${ss}</text></g>`).join("");
-        let Tl = f.map( (ff,i) => `<use href=${(ff&&p.indexOf(i)>-1)?"#svg_larrow":"#svg_nofox"} transform="rotate(${360.*i/f.length})" />`).join("");
-        let Tr = f.map( (ff,i) => `<use href=${(ff&&p.indexOf(i)>-1)?"#svg_rarrow":"#svg_nofox"} transform="rotate(${360.*i/f.length})" />`).join("");
-        let Tc = s.map( (_,i) => `<circle class="svg_click" cx="0" cy="800" r="150" id=${"top_"+i} transform="rotate(${360.*i/s.length})" onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`).join("");
+        let Th = s.map( (_,i) => `<circle class="svg_hole" cx="0" cy="-800" r="150" transform="rotate(${360.*i/s.length})"/>`).join("");
+        let Tf = s.map( (ss,i) => `<text class="svg_fox" x="0" y="-740" transform="rotate(${360.*i/s.length})">${ss}</text>`).join("");
+        let Tl = "";
+        let Tr = "";
+        let Thist = "";
+        if ( show_arrows ) {
+            Tl = f.map( (ff,i) => `<use href=${(ff&&p.indexOf(i)==-1)?"#svg_larrow":"#svg_nofox"} transform="rotate(${360.*i/f.length})" />`).join("");
+            Tr = f.map( (ff,i) => `<use href=${(ff&&p.indexOf(i)==-1)?"#svg_rarrow":"#svg_nofox"} transform="rotate(${360.*i/f.length})" />`).join("");
+            Thist = this.show_history() ;
+        }
+        let Tc = s.map( (_,i) => `<circle class="svg_click" cx="0" cy="-800" r="150" id=${"top_"+i} transform="rotate(${360.*i/s.length})" onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`).join("");
         return `<svg viewBox="-1000 -1000 2000 2000"> preserveAspectRatio="xMidYMid meet" width="100%"
             <circle cx="0" cy="0" r="803" stroke="grey" stroke-width="3" fill="none" />
             <circle cx="0" cy="0" r="797" stroke="grey" stroke-width="3" fill="none" />
             <def>
-                <text id="svg_rarrow" x="100" y="790" rotate="-15">&#8594;</text>
-                <text id="svg_larrow" x="-300" y="740" rotate="15">&#8592;</text>
+                <text id="svg_rarrow" x="100" y="-750" rotate="15">&#8594;</text>
+                <text id="svg_larrow" x="-300" y="-700" rotate="-15">&#8592;</text>
             </def>
             ${Th}
             ${Tf}
             ${Tl}
             ${Tr}
             ${Tc}
-            ${this.show_history()}
+            ${Thist}
             Sorry, your browser does not support inline SVG.  
         </svg>` ;
     }
@@ -128,7 +148,7 @@ class GardenView_Circular extends GardenView {
 class GardenView_Linear extends GardenView {
     add_history_row(s) {
         let Th = s.map( (_,i) => `<circle class="old_hole" cx="0" cy="200" r="50"  transform="translate(${i*350})" />`).join("");
-        let Tf = s.map( (ss,i) => `<text class="old_fox" x="-41" y="225" transform="translate(${i*350})">${ss}</text>`).join("");
+        let Tf = s.map( (ss,i) => `<text class="old_fox" x="0" y="225" transform="translate(${i*350})">${ss}</text>`).join("");
         this.history.push( `<line x1="0"y1="200" x2="${350*(H.value-1)}" y2 = "200" stroke="grey" stroke-width="3"/>${Th}${Tf}` );
     }
         
@@ -140,12 +160,18 @@ class GardenView_Linear extends GardenView {
         }
     }
 
-    create_svg(s) {
+    create_svg(s, show_arrows=true) {
         let f = G.foxes ;
         let Th = s.map( (_,i) => `<circle class="svg_hole" cx="0" cy="0" r="150" transform="translate(${i*350})"/>`).join("");
-        let Tf = s.map( (ss,i) => `<text class="svg_fox" x="-120" y="60" transform="translate(${i*350})">${ss}</text>`).join("");
-        let Tl = f.map( (ff,i) => i==0?"":`<use href=${ff?"#svg_larrow":"#svg_nofox"} transform="translate(${i*350})" />`).join("");
-        let Tr = f.map( (ff,i) => i==(s.length-1)?"":`<use href=${ff?"#svg_rarrow":"#svg_nofox"} transform="translate(${i*350})" />`).join("");
+        let Tf = s.map( (ss,i) => `<text class="svg_fox" x="0" y="60" transform="translate(${i*350})">${ss}</text>`).join("");
+        let Tl = "";
+        let Tr = "";
+        let Thist = "";
+        if ( show_arrows ) {
+            Tl = f.map( (ff,i) => i==0?"":`<use href=${ff?"#svg_larrow":"#svg_nofox"} transform="translate(${i*350})" />`).join("");
+            Tr = f.map( (ff,i) => i==(s.length-1)?"":`<use href=${ff?"#svg_rarrow":"#svg_nofox"} transform="translate(${i*350})" />`).join("");
+            Thist = this.show_history() ;
+        }
         let Tc = s.map( (_,i) => `<circle class="svg_click" cx="0" cy="0" r="150" transform="translate(${i*350})" id=${"top_"+i}  onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`).join("");
         return `<svg viewBox="-200 -250 ${350*(H.value-1)+400} 1300"> preserveAspectRatio="xMidYMid meet" width="100%"
             <line x1="0" y1="0" x2="${350*(H.value-1)}" y2 = "0" stroke="grey" stroke-width="9"  />
@@ -158,7 +184,7 @@ class GardenView_Linear extends GardenView {
             ${Tl}
             ${Tr}
             ${Tc}
-            ${this.show_history()}
+            ${Thist}
             Sorry, your browser does not support inline SVG.  
         </svg>` ;
     }
@@ -450,10 +476,35 @@ class Game_Circular extends Game {
     }
 }
 
+class Cookie { //convenience class
+    static set( cname, value ) {
+      // From https://www.tabnine.com/academy/javascript/how-to-set-cookies-javascript/
+        let date = new Date();
+        date.setTime(date.getTime() + (400 * 24 * 60 * 60 * 1000)); // > 1year
+        document.cookie = `${cname}=${encodeURIComponent(JSON.stringify(value))}; expires=${date.toUTCString()}; SameSite=None; Secure; path=/`;
+    }
+
+    static get( cname ) {
+        const name = `${cname}=`;
+        let ret = null;
+        decodeURIComponent(document.cookie).split('; ').filter( val => val.indexOf(name) === 0 ).forEach( val => {
+            try {
+                ret = JSON.parse( val.substring(name.length) );
+                }
+            catch(err) {
+                ret =  val.substring(name.length);
+                }
+        });
+        return ret;
+    }
+
+}
+
 class Overlay {
 	constructor () {
         // Parameters  -- standard game first
         this.classic() ;
+        this.cookies() ;
 	}
 
     classic() {
@@ -482,11 +533,16 @@ class Overlay {
     }
 
     fillin() { // updates rule and choose to match current game settings
+
         // holes
         document.getElementById("rholes").value = H.value;
+        Cookie.set("holes",H.value);
+
         // visits
         document.getElementById("rvisits").value = this.visits;
-        document.getElementsById("holesper").value = this.visits;
+        document.getElementById("holesper").value = this.visits;
+        Cookie.set("visits", this.visits );
+
         // geometry
         switch (this.geometry) {
             case "circular":
@@ -494,19 +550,46 @@ class Overlay {
                 break;
             case "linear":
             default:
-                document.getElementById("rarrange").innerHTML = `The ${H.value} foxholes are arranged in a line. The fox cannot move past either end of the line.`;
+                document.getElementById("rarrange").innerHTML = `The ${H.value} fox holes are arranged in a line. The fox cannot move past either end of the line.`;
                 break;
             }
-            document.querySelectorAll('input[name="arrange"]').forEach( a => a.checked=(a.value==this.geometry) );
+        document.querySelectorAll('input[name="arrange"]').forEach( a => a.checked=(a.value==this.geometry) );
+        Cookie.set("geometry", this.geometry );
+
         // poison
         if ( this.poison_days==0 ) {
             document.getElementById("rpoison").innerHTML = `Organic! No poisoning. The fox can move back in that very night after your daytime inspection.`;
         } else {
             document.getElementById("rpoison").innerHTML = `You are a poisoner! The hole is uninhabitable for ${this.poison_days} day(s) after your inspection.`;
         }
-        document.getElementsById("poisoneddays").value = this.poison_days;
+        document.getElementById("poisoneddays").value = this.poison_days;
+        Cookie.set("poison_days", this.poison_days );
     }
 
+    cookies() {
+        let x = Cookie.get("holes") ;
+        if ( x ) {
+            console.log(x);
+            H.value = x ;
+        }
+        x = Cookie.get("geometry") ;
+        if ( x ) {
+            console.log(x);
+            this.geometry = x ;
+        }
+        x = Cookie.get("visits") ;
+        if ( x ) {
+            console.log(x);
+            this.visits = x ;
+        }
+        x = Cookie.get("poison_days") ;
+        if ( x ) {
+            console.log(x);
+            this.poison_days = x ;
+        }
+        this.fillin() ;
+    }
+    
     select(game_type) {
         switch( game_type) {
             case "classic":
@@ -524,11 +607,17 @@ class Overlay {
             default:
         }
         // fill in fields
-        this.game();
+        this.newgame();
     }
         
     hide() {
-        ["svg","Ttable","choose","rules"].forEach( d => document.getElementById(d).style.display="none" );
+        ["svg_view","Ttable","choose","rules","layout"].forEach( d => document.getElementById(d).style.display="none" );
+    }
+
+    layout() {
+        this.hide() ;
+        GV.layout();
+        document.getElementById("layout").style.display="block";
     }
 
     choose() {
@@ -542,22 +631,12 @@ class Overlay {
         document.getElementById("rules").style.display="block";
     }
 
-    game() {
+    resumegame() {
         this.garden(this.onstate)
     }
 
-	garden( onstate ) {
-        this.hide();
-        this.onstate = onstate ;
-		if ( onstate ) {
-			document.getElementById("svg").style.display="block";
-			document.getElementById("Bgarden").style.backgroundColor = "white";
-			document.getElementById("Btable").style.backgroundColor = "grey";
-		} else {
-			document.getElementById("Ttable").style.display="block";
-			document.getElementById("Bgarden").style.backgroundColor = "grey";
-			document.getElementById("Btable").style.backgroundColor = "white";
-		}
+    newgame() {
+        this.resumegame();
         switch( this.geometry ) {
             case "linear":
                 G = new Game_Linear() ;
@@ -568,16 +647,31 @@ class Overlay {
                 break ;
             }
         G.start();
+    }
+
+	garden( onstate ) {
+        this.hide();
+        this.onstate = onstate ;
+		if ( onstate ) {
+			document.getElementById("svg_view").style.display="block";
+			document.getElementById("Bgarden").style.backgroundColor = "white";
+			document.getElementById("Btable").style.backgroundColor = "grey";
+		} else {
+			document.getElementById("Ttable").style.display="block";
+			document.getElementById("Bgarden").style.backgroundColor = "grey";
+			document.getElementById("Btable").style.backgroundColor = "white";
+		}
 	}
 
     changeInput() {
         if ( H.change ) {
-            G.start() ;
+            this.newgame() ;
         }
     }
 }
 var O = new Overlay();
-O.garden(true) ;
+O.garden(true);
+O.newgame();
 
 // Application starting point
 window.onload = () => {

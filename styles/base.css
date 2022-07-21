@@ -10,6 +10,9 @@ body {
     body, button {
         font-size: 2vw;
     }
+    caption button {
+        font-size: 1.5vw;
+    }
     input {
         font-size: 2vw;
         height: 2vw;
@@ -19,6 +22,9 @@ body {
 @media (orientation: portrait) {
     body, button {
         font-size: 3vw;
+    }
+    caption button {
+        font-size: 2vw;
     }
     input {
         font-size: 3vw;
@@ -101,7 +107,7 @@ td {
 caption {
     color: white;
 }
-#svg {
+.svg {
     background-color: blue;
     position: absolute;
     top: 0;
@@ -118,6 +124,7 @@ caption {
 .svg_fox {
     fill: black;
     font-size: 200px;
+    text-anchor: middle;
 }
 #svg_rarrow, #svg_larrow {
     fill: red;
@@ -136,6 +143,7 @@ caption {
 .old_fox {
     fill: black;
     font-size: 66px;
+    text-anchor: middle;
 }
 #choose label, #rules {
     color: white;
