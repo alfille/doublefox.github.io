@@ -121,19 +121,43 @@ caption {
 .svg_hole {
     fill: #8cd2cd;
 }
-.svg_fox {
+.svg_symbol {
     fill: black;
     font-size: 200px;
     text-anchor: middle;
 }
-#svg_rarrow, #svg_larrow {
-    fill: red;
-    font-size: 200px;
+#svg_x {
+    color: red;
+    font-size: 100px;
+    text-anchor: start;
+}
+#svg_xcover {
+    fill: transparent;
+    stroke: transparent;
+}
+.svg_boundary {
+    stroke: grey;
+    stroke-width: 9;
+    fill: transparent;
+}
+.svg_hrect {
+    stroke: grey;
+    stroke-width: 9;
+    fill: lightblue;
 }
 .svg_click {
     stroke: black;
     stroke-width: 10;
     fill: transparent;
+}
+.svg_arrow {
+    fill: red;
+    stroke: red;
+    stroke-width: 8;
+    visibility: visible;
+}
+#arrowhead polygon {
+    fill: red;
 }
 .old_hole {
     fill: #FFCCFF;
@@ -155,7 +179,7 @@ caption {
     background-color: #e6f2ff;
     radius: 5px;
 }
-#holesper, #poisoneddays, #rvisits, #rholes {
+#holesper, #poisoneddays, #rvisits, #rholes, #width {
     width: 2em;
 }
 #rules h3 {
