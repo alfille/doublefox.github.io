@@ -69,7 +69,7 @@ class Holes {
         return this.holes * this.mult ;
     }
 }
-var H = new Holes() ;
+H = new Holes() ;
 
 class GardenView {
     constructor() {
@@ -147,11 +147,11 @@ class GardenView {
     click(target) {
         let hole = parseInt(target.id.split('_')[1]) ;
         TV.click(hole);
+        console.log(target,hole,TV.checked(hole));
         target.style.strokeWidth = TV.checked(hole) ? "30" : "10" ;
     }
 
     layout() { // show layout of foxholes
-        O.garden(true); // garden view
         this.svg.innerHTML = this.create_svg(false) ;
         this.customize(G.foxes.map( (_,i) => i+"" ) ); // numbers not foxes
         this.arrow_location(); // yes arrows
@@ -162,7 +162,7 @@ class GardenView {
 
     post_layout() {
         this.control_row(this.symbol_list) // restore fox symbols
-        O.garden(false); // back to table
+        O.resume(); // back to table
     }
 
     Xmark() {
@@ -182,20 +182,20 @@ class GardenView {
 
 class GardenView_Circular extends GardenView {
     start() {
+        let f = G.foxes ; // to get a "foxes" long array, we don't actually use the data now
+
         this.total_radius = 350*(H.ylength-1) + 350*H.xlength/3 + 200 ; // For inner circle radius (pi=3) plus layers, plus boundary
-        let f = G.foxes ;
         this.transform  = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="rotate(${360*l/H.xlength}) translate(0,${350*h})"`;}) ;
-        this.Htransform  = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="rotate(${360*l/H.xlength}) translate(0,${100*h})"`;}) ;
-        this.lower      = f.map( (_,i) => `<circle class="svg_hole" cx="0" cy="-${this.total_radius-200}" r="150" ${this.transform[i]}/>`)
-                           .join("");
-        this.symbol     = f.map( (_,i) => `<text class="svg_symbol" x="0" y="-${this.total_radius-200-60}" id=${"symbol_"+i} ${this.transform[i]}>&nbsp;</text>`)
-                           .join("");
-        this.upper      = f.map( (_,i) => `<circle class="svg_click" cx="0" cy="-${this.total_radius-200}" r="150" id=${"upper_"+i} ${this.transform[i]} onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`)
-                           .join("");
+        this.lower      = f.map( (_,i) => `<circle class="svg_hole" cx="0" cy="-${this.total_radius-200}" r="150" ${this.transform[i]}/>`).join("");
+        this.symbol     = f.map( (_,i) => `<text class="svg_symbol" x="0" y="-${this.total_radius-200-60}" id=${"symbol_"+i} ${this.transform[i]}>&nbsp;</text>`).join("");
+        this.upper      = f.map( (_,i) => `<circle class="svg_click" cx="0" cy="-${this.total_radius-200}" r="150" id=${"upper_"+i} ${this.transform[i]} onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`).join("");
+
+        // history defs
+        this.Htransform = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="rotate(${360*l/H.xlength}) translate(0,${100*h})"`;}) ;
         this.Hradius = this.total_radius-400-350*(H.ylength-1);
         this.Hscale = (this.Hradius-100*H.ylength+50) / (this.Hradius+50) ;
-        this.Hlower = f.map( (_,i) => `<circle class="old_hole" cx="0" cy="-${this.Hradius}" r="50"  ${this.Htransform[i]} />`)
-                           .join("");
+        this.Hlower = f.map( (_,i) => `<circle class="old_hole" cx="0" cy="-${this.Hradius}" r="50"  ${this.Htransform[i]} />`).join("");
+
         super.start();
     }
     
@@ -333,7 +333,7 @@ class TableView {
             .filter( i=>parseInt(i.getAttribute("data-n"))==hole )[0].click();
     }
 
-    check(hole) {
+    check() {
         let h = [...this.tbody.lastElementChild.querySelectorAll("input")]
             .filter( c=>c.checked )
             .map(c=>parseInt(c.getAttribute("data-n")));
@@ -363,13 +363,12 @@ class TableView {
                 d.innerHTML = s[i-1] + "<br>" ;
                 let b = document.createElement("input");
                 b.type = "checkbox";
-                b.onclick = () => TV.check(i-1) ;
+                b.onclick = () => TV.check() ;
                 b.setAttribute("data-n",i-1);
                 d.appendChild(b);
             }
             r.appendChild(d);
         }
-        let d = document.createElement("td");
         this.tbody.appendChild(r);
         GV.control_row(s);
     }
@@ -433,7 +432,6 @@ class TableView {
             }
             r.appendChild(d);
         }
-        let d = document.createElement("td");
         this.tbody.appendChild(r);
         GV.add_history_row(s);
     }
@@ -597,7 +595,10 @@ class Game_Circular extends Game {
     }
 
     fox_moves (h) { // returns an array of landing spots
-        return this.wrap_neighbors( h, H.xlength );
+        let [ lo,hi ] = G.split( h, H.xlength ) ;
+        return this.wrap_neighbors(lo,H.xlength).map(l=>[l,hi])
+            .concat( this.limit_neighbors(hi,H.ylength).map(h=>[lo,h]) )
+            .map( x=> this.combine( x[0], x[1], H.xlength ) );
     }
 }
 
@@ -641,12 +642,12 @@ class Cookie { //convenience class
 }
 
 class Overlay {
-	constructor () {
+    constructor () {
         // Parameters  -- standard game first
         this.classic() ;
         this.cookies() ;
         this.is_garden = true; //default
-	}
+    }
 
     classic() {
         // Parameters  -- standard game first
@@ -773,6 +774,7 @@ class Overlay {
 
     layout() {
         this.hide() ;
+        document.getElementById("svg_view").style.display="block";
         GV.layout();
     }
 
@@ -785,6 +787,10 @@ class Overlay {
         this.hide() ;
         this.fillin();
         document.getElementById("rules").style.display="block";
+    }
+
+    resume() {
+        this.garden( this.is_garden ) ;
     }
 
     newgame() {
@@ -803,19 +809,19 @@ class Overlay {
         G.start();
     }
 
-	garden( is_garden ) {
+    garden( is_garden ) {
         this.hide();
         this.is_garden = is_garden ;
-		if ( is_garden ) {
-			document.getElementById("svg_view").style.display="block";
-			document.getElementById("Bgarden").style.backgroundColor = "white";
-			document.getElementById("Btable").style.backgroundColor = "grey";
-		} else {
-			document.getElementById("Ttable").style.display="block";
-			document.getElementById("Bgarden").style.backgroundColor = "grey";
-			document.getElementById("Btable").style.backgroundColor = "white";
-		}
-	}
+        if ( is_garden ) {
+            document.getElementById("svg_view").style.display="block";
+            document.getElementById("Bgarden").style.backgroundColor = "white";
+            document.getElementById("Btable").style.backgroundColor = "grey";
+        } else {
+            document.getElementById("Ttable").style.display="block";
+            document.getElementById("Bgarden").style.backgroundColor = "grey";
+            document.getElementById("Btable").style.backgroundColor = "white";
+        }
+    }
 
     changeInput() {
         if ( H.change ) {
@@ -823,7 +829,7 @@ class Overlay {
         }
     }
 }
-var O = new Overlay();
+O = new Overlay();
 O.newgame();
 
 // Application starting point
