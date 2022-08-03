@@ -130,10 +130,14 @@ class GardenView {
 
     control_row(symbol_list) {
         this.symbol_list = symbol_list ;
-        this.svg.innerHTML = this.create_svg() ;
+        this.svg.innerHTML = this.create_svg(true);
         if ( this.vb == null ) {
-            this.vb = ['x','y'].map( x => document.getElementById("svg_code").viewBox.baseVal[x] ) ;
+            this.vb={};
+            ['x','y', 'width', 'height' ].forEach( x => this.vb[x]=document.getElementById("svg_code").viewBox.baseVal[x] ) ;
+            console.log(this.vb);
         }
+        let cc = document.getElementById("cover_crop");
+        ['x', 'y', 'height','width'].forEach( p=> cc.setAttribute( p, "0" ) );
             
         if ( G.number !== 0 ) {
             G.foxes.forEach( (_,i)=>document.getElementById("upper_"+i).addEventListener('click', (e) => this.click(e.target)) );
@@ -147,7 +151,7 @@ class GardenView {
     click(target) {
         let hole = parseInt(target.id.split('_')[1]) ;
         TV.click(hole);
-        console.log(target,hole,TV.checked(hole));
+        console.log("click",target,hole,target.style.strokeWidth);
         target.style.strokeWidth = TV.checked(hole) ? "30" : "10" ;
     }
 
@@ -157,7 +161,11 @@ class GardenView {
         this.arrow_location(); // yes arrows
         this.arrowlist.forEach( (m,i) => m.forEach( mm => document.getElementById("arr"+i+"_"+mm).style.visibility= "visible" ));
         
-        this.svg.addEventListener('click', () => GV.post_layout() );
+        let cc = document.getElementById("cover_crop");
+        cc.addEventListener('click', () => this.post_layout() );
+        ['x', 'y', 'height','width'].forEach( p=> cc.setAttribute( p, this.vb[p] ) );
+        
+        
     }
 
     post_layout() {
@@ -168,7 +176,7 @@ class GardenView {
     Xmark() {
         return (this.vb==null) ?
             "" :
-            `<text id="svg_x" x=${this.vb[0]} y=${this.vb[1]+100}>&#10006;</text><rect id="svg_xcover" x=${this.vb[0]} y=${this.vb[1]} width="110" height="110" />`
+            `<text id="svg_x" x=${this.vb.x} y=${this.vb.y+100}>&#10006;</text><rect id="svg_xcover" x=${this.vb.x} y=${this.vb.y} width="110" height="110" />`
             ;
     }
 
@@ -180,7 +188,7 @@ class GardenView {
     }        
 }
 
-class GardenView_Circular extends GardenView {
+class GardenView_Circle extends GardenView {
     start() {
         let f = G.foxes ; // to get a "foxes" long array, we don't actually use the data now
 
@@ -226,6 +234,7 @@ class GardenView_Circular extends GardenView {
             ${this.symbol}
             ${this.upper}
             ${Thist}
+            <rect x1="0" y1="0" width="0" height="0" id="cover_crop">
             Sorry, your browser does not support inline SVG.  
         </svg>` ;
     }
@@ -271,6 +280,62 @@ class GardenView_Grid extends GardenView {
     create_svg(show_history=true) {
         let Thist = show_history ? this.show_history() : this.Xmark() ; 
         return `<svg id="svg_code" viewBox="-200 -250 ${350*(H.xlength-1)+400} 1300"> preserveAspectRatio="xMidYMid meet" width="100%"
+            <rect class="svg_boundary" />
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto" markerUnits="strokeWidth" >
+                    <polygon points="0 0, 10 3.5, 0 7" />
+                </marker>
+            </defs>
+            ${this.lower}
+            ${this.allarrows}
+            ${this.symbol}
+            ${this.upper}
+            ${Thist}
+            Sorry, your browser does not support inline SVG.  
+        </svg>` ;
+    }
+}
+
+class GardenView_OffsetGrid extends GardenView {
+    start() {
+        let f = G.foxes ;
+        this.transform  = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="translate(${l*350+(h&1)*175},${h*303})"`} ) ;
+        this.lower      = f.map( (_,i) => `<circle class="svg_hole" cx="0" cy="0" r="150" ${this.transform[i]}/>`)
+                           .join("");
+        this.symbol     = f.map( (_,i) => `<text class="svg_symbol" x="0" y="60" id=${"symbol_"+i} ${this.transform[i]}>&nbsp;</text>`)
+                           .join("");
+        this.upper      = f.map( (_,i) => `<circle class="svg_click" cx="0" cy="0" r="150" ${this.transform[i]} id=${"upper_"+i}  onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`)
+                           .join("");
+        this.Htransform = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="translate(${l*350+(h&1)*175},${200+h*100+350*(H.ylength-1)})"`} ) ;
+        this.Hlower     = f.map( (_,i) => `<circle class="old_hole" cx="0" cy="0" r="50"  ${this.Htransform[i]} />`).join("");
+
+        super.start();
+    }
+    
+    add_history_row(s) {
+        let Tf = s.map( (ss,i) => `<text class="old_fox" x="0" y="25" ${this.Htransform[i]}>${ss}</text>`).join("");
+        this.history.push( `<rect x1="0" y1="0" width="${350*(H.xlength-1)+(O.real_offset?175:0)}" height="${100*(H.ylength-1)}" class="svg_hrect" ${this.Htransform[0]} />${this.Hlower}${Tf}` );
+    }
+        
+    show_history() {
+        if ( this.history.length == 0 ) {
+            return "";
+        } else {
+            return this.history.reduce( (t,x) => `<g transform="translate(0,${5+100*H.ylength})">${t}</g>${x}` );
+        }
+    }
+
+    set_boundary() {
+        let r = document.querySelector(".svg_boundary");
+        r.setAttribute( "x", this.X[0]+"" );
+        r.setAttribute( "y", this.Y[0]+"" );
+        r.setAttribute( "width", this.X[O.real_offset?2*H.xlength-1:H.total-1]+"" );
+        r.setAttribute( "height", this.Y[H.total-1]+"" );
+    }
+
+    create_svg(show_history=true) {
+        let Thist = show_history ? this.show_history() : this.Xmark() ; 
+        return `<svg id="svg_code" viewBox="-200 -250 ${350*(H.xlength-1)+575} ${350*(H.xlength-1)+575}"> preserveAspectRatio="xMidYMid meet" width="100%"
             <rect class="svg_boundary" />
             <defs>
                 <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto" markerUnits="strokeWidth" >
@@ -564,17 +629,12 @@ class Game {
         return [ this.wrap(i+1,m), this.wrap(i-1,m) ];
     }
 
+    limit( ar, m ) { // array ar
+        return ar.filter( a => a>=0 && a<m );
+    }
+
     limit_neighbors( i , m ) {
-        if ( m==1 ) {
-            return [] ;
-        }
-        if ( i-1 < 0 ) {
-            return [i+1];
-        }
-        if ( i+1 >= m ) {
-            return [i-1] ;
-        }
-        return [i-1,i+1];
+        return this.limit([i-1,i+1],m);
     }
 
     split( i, m ) { //return low to high
@@ -587,11 +647,26 @@ class Game {
     }
 }
 
-class Game_Circular extends Game {
+class Game_Circle extends Game {
    constructor() {
         super() ;
         TV = new TableView() ;
-        GV = new GardenView_Circular() ;
+        GV = new GardenView_Circle() ;
+    }
+
+    fox_moves (h) { // returns an array of landing spots
+        let [ lo,hi ] = G.split( h, H.xlength ) ;
+        return this.wrap_neighbors(lo,H.xlength).map(l=>[l,hi])
+            .concat( this.limit_neighbors(hi,H.ylength).map(h=>[lo,h]) )
+            .map( x=> this.combine( x[0], x[1], H.xlength ) );
+    }
+}
+
+class Game_OffsetCircle extends Game {
+   constructor() {
+        super() ;
+        TV = new TableView() ;
+        GV = new GardenView_OffsetCircle() ;
     }
 
     fox_moves (h) { // returns an array of landing spots
@@ -614,6 +689,23 @@ class Game_Grid extends Game {
         return  this.limit_neighbors(lo,H.xlength).map(l=>[l,hi])
             .concat( this.limit_neighbors(hi,H.ylength).map(h=>[lo,h]) )
             .map( x=> this.combine( x[0], x[1], H.xlength) );
+    }
+}
+
+class Game_OffsetGrid extends Game {
+   constructor() {
+        super() ;
+        TV = new TableView() ;
+        GV = new GardenView_OffsetGrid() ;
+    }
+
+    fox_moves (holes) { // returns an array of landing spots
+        let [ lo,hi ] = G.split( holes, H.xlength ) ;
+        let r = this.limit_neighbors( lo, H.xlength ).map( l=>[l,hi] ) ; // horizontal
+        this.limit_neighbors( hi, H.ylength ) //vertical
+            .forEach( h => this.limit( [lo-(h&1),lo+1-(h&1)], H.xlength ).forEach( l => r.push( [l,h] ) )
+            );
+        return r.map( x=> this.combine( x[0], x[1], H.xlength )) ;
     }
 }
 
@@ -647,14 +739,17 @@ class Overlay {
         this.classic() ;
         this.cookies() ;
         this.is_garden = true; //default
+        this.offset = false;
+        this.real_offset = false; // offset and thick
     }
 
     classic() {
         // Parameters  -- standard game first
-        this.geometry = "linear";
+        this.geometry = "grid";
         this.visits = 1;
         this.poison_days = 0;
         this.width = 1;
+        this.offset = false;
     }
 
     circle () {
@@ -662,6 +757,7 @@ class Overlay {
         this.visits = 2;
         this.poison_days = 0;
         this.width = 1;
+        this.offset = false;
     }
 
     poison() {
@@ -669,6 +765,7 @@ class Overlay {
         this.visits = 1;
         this.poison_days = 1;
         this.width = 1;
+        this.offset = false;
     }
 
     grid() {
@@ -683,6 +780,7 @@ class Overlay {
         this.width = document.getElementById('width').value;
         this.visits = document.getElementById("holesper").value ;
         this.poison_days = document.getElementById("poisoneddays").value
+        this.offset = document.getElementById("offset").checked;
     }
 
     fillin() { // updates rule and choose to match current game settings
@@ -695,17 +793,19 @@ class Overlay {
         document.getElementById("holesper").value = this.visits;
         Cookie.set("visits", this.visits );
 
+        // offset
+        document.getElementById("offset").checked = this.offset;
+        Cookie.set("offset", this.offset );
+
+
         // geometry
         switch (this.geometry) {
-            case "grid":
-                document.getElementById("rarrange").innerHTML = `The ${H.xlength} fox holes are arranged in a thicker line. The fox cannot move past the edges.`;
-                break;
             case "circular":
-                document.getElementById("rarrange").innerHTML = `The ${H.xlength} foxholes are arranged in a circle.`;
+                document.getElementById("rarrange").innerHTML = `The ${H.xlength} foxholes are arranged in a&{this.width>1?" thicker":""} &{this.real_offset?" offset":""} circle.`;
                 break;
-            case "linear":
+            case "grid":
             default:
-                document.getElementById("rarrange").innerHTML = `The ${H.xlength} fox holes are arranged in a line. The fox cannot move past either end of the line.`;
+                document.getElementById("rarrange").innerHTML = `The ${H.xlength} fox holes are arranged in a&{this.width>1?" thicker":""} &{this.real_offset?" offset":""} line. The fox cannot move past the edges.`;
                 break;
             }
         document.querySelectorAll('input[name="arrange"]').forEach( a => a.checked=(a.value==this.geometry) );
@@ -741,6 +841,11 @@ class Overlay {
         if ( x ) {
             console.log(x);
             this.poison_days = x ;
+        }
+        x = Cookie.get("offset") ;
+        if ( x ) {
+            console.log(x);
+            this.offset = x ;
         }
         this.fillin() ;
     }
@@ -795,14 +900,14 @@ class Overlay {
 
     newgame() {
         H.ylength = this.width;
+        this.real_offset = this.offset && (this.width>1) ;
         switch( this.geometry ) {
-            case "grid":
-            case "linear":
-                G = new Game_Grid() ;
-                break ;
             case "circular":
+                G = this.offset? new Game_OffsetCircle() : new Game_Circle() ;
+                break ;
+            case "grid":
             default:
-                G = new Game_Circular() ;
+                G = this.offset ? new Game_OffsetGrid() : new Game_Grid() ;
                 break ;
             }
         this.garden(this.is_garden)
