@@ -95,8 +95,8 @@ class GardenView {
 
     dimension_control() {
         let x = Math.min(this.svg.clientWidth,window.innerHeight-this.head.offsetHeight);
-        this.svg.style.width = x+"px";
-        this.svg.style.height = x+"px";
+        //this.svg.style.width = x+"px";
+        //this.svg.style.height = x+"px";
         if ( this.X.length == 0 ) {
             let Cx = parseInt(document.getElementById("upper_0").attributes.cx.value);
             let Cy = parseInt(document.getElementById("upper_0").attributes.cy.value);

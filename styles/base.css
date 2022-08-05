@@ -112,7 +112,7 @@ caption {
     display: inline-block;
     position: relative;
     width: 100%;
-    overflow: hidden;
+    /*overflow: hidden;*/
 }
 .svg_hole {
     fill: #8cd2cd;
