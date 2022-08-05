@@ -240,6 +240,58 @@ class GardenView_Circle extends GardenView {
     }
 }
 
+class GardenView_OffsetCircle extends GardenView {
+    start() {
+        let f = G.foxes ; // to get a "foxes" long array, we don't actually use the data now
+
+        this.total_radius = 303*(H.ylength-1) + 350*H.xlength/3 + 200 ; // For inner circle radius (pi=3) plus layers, plus boundary
+        this.transform  = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="rotate(${360*(l+.5*(h&1))/H.xlength}) translate(0,${303*h})"`;}) ;
+        this.lower      = f.map( (_,i) => `<circle class="svg_hole" cx="0" cy="-${this.total_radius-200}" r="150" ${this.transform[i]}/>`).join("");
+        this.symbol     = f.map( (_,i) => `<text class="svg_symbol" x="0" y="-${this.total_radius-200-60}" id=${"symbol_"+i} ${this.transform[i]}>&nbsp;</text>`).join("");
+        this.upper      = f.map( (_,i) => `<circle class="svg_click" cx="0" cy="-${this.total_radius-200}" r="150" id=${"upper_"+i} ${this.transform[i]} onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`).join("");
+
+        // history defs
+        this.Htransform = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="rotate(${360*(l+.5*(h&1))/H.xlength}) translate(0,${78*h})"`;}) ;
+        this.Hradius = this.total_radius-400-303*(H.ylength-1);
+        this.Hscale = (this.Hradius-78*H.ylength+50) / (this.Hradius+50) ;
+        this.Hlower = f.map( (_,i) => `<circle class="old_hole" cx="0" cy="-${this.Hradius}" r="50"  ${this.Htransform[i]} />`).join("");
+
+        super.start();
+    }
+    
+    add_history_row(s) {
+        let Tf = s.map( (ss,i) => `<text class="old_fox" x="0" y="-${this.Hradius-20}"  ${this.Htransform[i]}>${ss}</text><`).join("");
+        this.history.push( `<circle cx="0" cy="0" r="${this.Hradius}" stroke="grey" stroke-width="3" fill="none" />${this.Hlower}${Tf}`);
+    }
+        
+    show_history() {
+        if ( this.history.length == 0 ) {
+            return "";
+        } else {
+            return this.history.reduce( (t,x) => `<g transform="scale(${this.Hscale}) rotate(5)">${t}</g>${x}` );
+        }
+    }
+
+    create_svg(show_history=true) {
+        let Thist = show_history ? this.show_history() : this.Xmark() ; 
+        return `<svg id="svg_code" viewBox="-${this.total_radius} -${this.total_radius} ${2*this.total_radius} ${2*this.total_radius}"> preserveAspectRatio="xMidYMid meet" width="100%"
+            <circle cx="0" cy="0" r="${this.total_radius-200}" class="svg_boundary" />
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto" markerUnits="strokeWidth" >
+                    <polygon points="0 0, 10 3.5, 0 7" />
+                </marker>
+            </defs>
+            ${this.lower}
+            ${this.allarrows}
+            ${this.symbol}
+            ${this.upper}
+            ${Thist}
+            <rect x1="0" y1="0" width="0" height="0" id="cover_crop">
+            Sorry, your browser does not support inline SVG.  
+        </svg>` ;
+    }
+}
+
 class GardenView_Grid extends GardenView {
     start() {
         let f = G.foxes ;
@@ -291,6 +343,7 @@ class GardenView_Grid extends GardenView {
             ${this.symbol}
             ${this.upper}
             ${Thist}
+            <rect x1="0" y1="0" width="0" height="0" id="cover_crop">
             Sorry, your browser does not support inline SVG.  
         </svg>` ;
     }
@@ -347,6 +400,7 @@ class GardenView_OffsetGrid extends GardenView {
             ${this.symbol}
             ${this.upper}
             ${Thist}
+            <rect x1="0" y1="0" width="0" height="0" id="cover_crop">
             Sorry, your browser does not support inline SVG.  
         </svg>` ;
     }
@@ -669,11 +723,13 @@ class Game_OffsetCircle extends Game {
         GV = new GardenView_OffsetCircle() ;
     }
 
-    fox_moves (h) { // returns an array of landing spots
-        let [ lo,hi ] = G.split( h, H.xlength ) ;
-        return this.wrap_neighbors(lo,H.xlength).map(l=>[l,hi])
-            .concat( this.limit_neighbors(hi,H.ylength).map(h=>[lo,h]) )
-            .map( x=> this.combine( x[0], x[1], H.xlength ) );
+    fox_moves (holes) { // returns an array of landing spots
+        let [ lo,hi ] = G.split( holes, H.xlength ) ;
+        let r = this.wrap_neighbors( lo, H.xlength ).map( l=>[l,hi] ) ; // horizontal
+        this.limit_neighbors( hi, H.ylength ) //vertical
+            .forEach( h => [lo-(h&1),lo+1-(h&1)].forEach( l=>r.push( [this.wrap( l, H.xlength ),h]))
+            );
+        return r.map( x=> this.combine( x[0], x[1], H.xlength )) ;
     }
 }
 
