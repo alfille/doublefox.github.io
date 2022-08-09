@@ -58,7 +58,7 @@ header button {
 #holes {
     width: 2em;
 }
-#switch {
+.switch {
 	display: inline-flex;
 	align-items: center;
     width: 100%;
@@ -67,10 +67,10 @@ header button {
 	background: darkblue;
     border: 3px solid black;
 }
-#switch button {
+.switch button {
     background-color: #8cd2cd;
 }
-#switch button:hover {
+.switch button:hover {
 	border-color:  red;
 }
 .hidden {
@@ -122,15 +122,6 @@ caption {
     font-size: 200px;
     text-anchor: middle;
 }
-#svg_x {
-    color: red;
-    font-size: 100px;
-    text-anchor: start;
-}
-#svg_xcover {
-    fill: transparent;
-    stroke: transparent;
-}
 .svg_boundary {
     stroke: grey;
     stroke-width: 9;
@@ -165,9 +156,6 @@ caption {
     font-size: 66px;
     text-anchor: middle;
 }
-#cover_crop {
-    fill: transparent;
-}
 #choose label, #rules {
     color: white;
 }
@@ -184,3 +172,26 @@ caption {
 #rules h3 {
     color: yellow;
 }
+#svg_code {
+    background: green;
+    animation: fade 3s;
+    animation-fill-mode: forwards;
+}
+@keyframes fade {
+    from { background-color: green; }
+    to {background-color: transparent; }
+}
+#BB_history: {
+    display: inline-flex;
+    flex-direction: row;
+    margin-left: 1em;
+    margin-right: 1em;
+}
+#Hslide {
+    width: 100%;
+}
+#Hval {
+    readonly: true;
+    width: 3vw;
+}
+

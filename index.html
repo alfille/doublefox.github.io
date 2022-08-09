@@ -27,10 +27,10 @@
                 </div>
             </div>
         </header>
-        <div id="switch">
+        <div id="BB_table" class="switch">
             <div>
-                <button type="button" id="Btable" onclick="O.garden(false)" title="Table view">&nbsp;&#128196;&nbsp;</button>
-                <button type="button" id="Bgarden" onclick="O.garden(true)" title="Garden view">&nbsp;&#127969;&nbsp;</button>
+                <button type="button" id="Btable1" onclick="O.garden(false)" title="Table view">&nbsp;&#128196;&nbsp;</button>
+                <button type="button" id="Bgarden1" onclick="O.garden(true)" title="Garden view">&nbsp;&#127969;&nbsp;</button>
             </div>
             <button type="button" class="hidden">&nbsp;</button>
             <button type="button" class="round" onclick="TV.back()" title="Undo last move">Undo</button>
@@ -38,13 +38,45 @@
             <button type="button" class="round" onclick="O.newgame()" title="New game">New</button>
             <button type="button" class="round" onclick="O.rules()" title="Brief game rules">Rules</button>
             <button type="button" class="round" onclick="O.choose()" title="Choose game type...">Choose...</button>
+            <button type="button" class="round" onclick="O.layout()">Show layout</button>
+        </div>
+        <div id="BB_garden" class="switch">
+            <div>
+                <button type="button" id="Btable2" onclick="O.garden(false)" title="Table view">&nbsp;&#128196;&nbsp;</button>
+                <button type="button" id="Bgarden2" onclick="O.garden(true)" title="Garden view">&nbsp;&#127969;&nbsp;</button>
+            </div>
+            <button type="button" class="hidden">&nbsp;</button>
+            <button type="button" class="round" onclick="TV.back()" title="Undo last move">Undo</button>
+            <button type="button" class="hidden">&nbsp;</button>
+            <button type="button" class="round" onclick="O.newgame()" title="New game">New</button>
+            <button type="button" class="round" onclick="O.rules()" title="Brief game rules">Rules</button>
+            <button type="button" class="round" onclick="O.choose()" title="Choose game type...">Choose...</button>
+            <button type="button" class="round" onclick="O.history()" title="Review history" id="HistoryButton">History...</button>
+        </div>
+        <div id="BB_history" class="switch">
+            <input type="text" id="Hval">
+            <button type="button" id="Hstart" class="round" onclick="GV.hstart()" title="first">&nbsp;&#x23ee;&nbsp;</button>
+            <button type="button" id="Hback" class="round" onclick="GV.hminus()" title="less recent">&nbsp;&#x23ea;&nbsp;</button>
+            <input  type="range" id="Hslide" oninput="GV.show_history()"/>
+            <button type="button" id="Hforeward" class="round" onclick="GV.hplus()" title="more recent">&nbsp;&#x23e9;&nbsp;</button>
+            <button type="button" id="Hend" class="round" onclick="GV.hend()" title="most recent">&nbsp;&#x23ed;&nbsp;</button>
+            <button type="button" class="round" onclick="GV.post_layout()" title="Return to game">Exit</button>
+        </div>
+        <div id="BB_rules" class="switch">
+            <button type="button" class="round" onclick="O.resume()" title="Return to game">Return to game</button>
+        </div>
+        <div id="BB_layout" class="switch">
+            <button type="button" class="round" onclick="GV.post_layout()" title="Return to game">Close layout</button>
+        </div>
+        <div id="BB_choose" class="switch">
+            <button type="button" class="round" onclick="O.select('custom')" title="Use custom game parameters">Start Custom Game</button>
+            <button type="button" class="round" onclick="O.resume()" title="Return to game">Cancel</button>
         </div>
         <div class="working">
             <div id="Ttable">
                 <table>
                     <caption>
                         Doublefox game play
-                        <button type="button" onclick="O.layout()">Show layout</button>
                     </caption>
                     <thead>
                     </thead>
@@ -56,7 +88,7 @@
             </div>
             <div id="choose">
                 <fieldset>
-                    <legend>Standard Games</legend>
+                    <legend>Quick choices: Standard Games</legend>
                     <button type="button" class="standard" onclick="O.select('classic')" title="Arranged in a line, one look/day, no poisoning">Classic foxholes</button>
                     <button type="button" class="standard" onclick="O.select('circle')" title="Arranged in a circle, two looks/day, no poisoning">Circle foxholes</button>
                     <button type="button" class="standard" onclick="O.select('poison')" title="Arranged in a circle, one look/day, poisoned 1 day">Poison foxholes</button>
@@ -64,7 +96,7 @@
                 </fieldset>
                 <br><br>
                 <fieldset>
-                    <legend>Custom Game</legend>
+                    <legend>Design a Custom Game</legend>
                     <fieldset>
                         <legend>Hole arrangement</legend>
                         <label>Holes in a <b>line</b><input type="radio" name="arrange" value="linear" checked></label>
@@ -77,7 +109,6 @@
                     <br>
                     <label>Inspections per day: <input type="number" id="holesper" min=1 max=4 value=1></label><br>
                     <label>Days hole is poisoned after inspection: <input type="number" id="poisoneddays" min=0 max=4 value=0></label><br>
-                    <button type="button" class="standard" onclick="O.select('custom')" title="Use custom game parameters">Try Custom Game</button>
                 </fieldset>
             </div>
             <div id="rules">
@@ -99,7 +130,6 @@
                     Inspect holes in the right order to catch even the sneakiest fox.
                     <br>
                </fieldset>
-                <button type="button" class="standard" onclick="O.resume()" title="Return to game">Ok</button>
             </div>
         </div>
         <!-- scripts -->

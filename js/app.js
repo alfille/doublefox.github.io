@@ -75,22 +75,20 @@ class GardenView {
     constructor() {
         this.svg = document.getElementById("svg_view");
         this.head = document.getElementById("top");
+        this.hbutton = document.getElementById("HistoryButton");
+        this.hslide = document.getElementById("Hslide");
+        this.hval = document.getElementById("Hval");
         window.onresize = () => this.dimension_control();
     }
 
     start() {
-        this.history = [] ;
         this.arrowlist = G.foxes.map( (_,i) => G.fox_moves(i) ) ;
         this.allarrows = this.arrowlist.map( (m,i) => m.map( mm => `<line id=${"arr"+i+"_"+mm} x1="0" y1="0" x2="0" y2="0" class="svg_arrow" marker-end="url(#arrowhead)" visibility="hidden" />`).join("")
             ).join("");
         this.X = [] ; // coordinates of holes
         this.Y = [] ;
         this.symbol_list = [];
-        this.vb = null ; // viewbox coordinates
-    }
-
-    back() {
-        this.history.pop();
+        this.configure();
     }
 
     dimension_control() {
@@ -98,11 +96,12 @@ class GardenView {
         //this.svg.style.width = x+"px";
         //this.svg.style.height = x+"px";
         if ( this.X.length == 0 ) {
-            let Cx = parseInt(document.getElementById("upper_0").attributes.cx.value);
-            let Cy = parseInt(document.getElementById("upper_0").attributes.cy.value);
             // get circle locations (get transform and calculate)
             G.foxes.forEach( (_,i) => {
-                let mtx = document.getElementById("upper_"+i).transform.baseVal.consolidate().matrix ;
+                let up = document.getElementById("upper_"+i) ;
+                let Cx = up.attributes.cx.value ;
+                let Cy = up.attributes.cy.value ;
+                let mtx = up.transform.baseVal.consolidate().matrix ;
                 this.X[i] = Cx * mtx.a + Cy * mtx.c + mtx.e ;
                 this.Y[i] = Cx * mtx.b + Cy * mtx.d + mtx.f ;
                 });
@@ -117,292 +116,195 @@ class GardenView {
             ll.setAttribute( "x2", this.X[i]*.7 + this.X[mm]*.3 +"" ) ;
             ll.setAttribute( "y2", this.Y[i]*.7 + this.Y[mm]*.3 +"" ) ;
             }) );
-        this.set_boundary();
     }
 
-    customize(s) {
+    symbolize(s) {
         s.forEach( (ss,i) => document.getElementById("symbol_"+i).innerHTML = ss );
     }
 
-    visibility() {
-        G.foxes.forEach( (f,i) => this.arrowlist[i].forEach( m => document.getElementById("arr"+i+"_"+m).style.visibility= f?"visible":"hidden" ));
+    arrow_visibility(flist) {
+        flist.forEach( (f,i) => this.arrowlist[i].forEach( m => document.getElementById("arr"+i+"_"+m).style.visibility= f?"visible":"hidden" ));
     }
 
     control_row(symbol_list) {
         this.symbol_list = symbol_list ;
-        this.svg.innerHTML = this.create_svg(true);
-        if ( this.vb == null ) {
-            this.vb={};
-            ['x','y', 'width', 'height' ].forEach( x => this.vb[x]=document.getElementById("svg_code").viewBox.baseVal[x] ) ;
-            console.log(this.vb);
-        }
-        let cc = document.getElementById("cover_crop");
-        ['x', 'y', 'height','width'].forEach( p=> cc.setAttribute( p, "0" ) );
+        this.svg.innerHTML = this.create_svg("game");
             
         if ( G.number !== 0 ) {
             G.foxes.forEach( (_,i)=>document.getElementById("upper_"+i).addEventListener('click', (e) => this.click(e.target)) );
         }
         this.dimension_control() ;
-        this.customize(symbol_list) ;
-        this.visibility() ;
+        this.symbolize(symbol_list) ;
+        this.arrow_visibility(G.foxes) ;
         this.arrow_location();
+        if ( G.day == 0 ) {
+            this.hbutton.innerText = "History ...";
+        } else {
+            this.hbutton.innerText = `History (${G.day})`;
+        }
+    }
+
+    create_svg(display_state="game") {
+        return `<svg id="svg_code" viewBox="${this.vb.x} ${this.vb.y} ${this.vb.width} ${this.vb.height}"> preserveAspectRatio="xMidYMid meet" width="100%"
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto" markerUnits="strokeWidth" >
+                    <polygon points="0 0, 10 3.5, 0 7" />
+                </marker>
+            </defs>
+            ${this.background}
+            ${this.lower}
+            ${this.allarrows}
+            ${this.symbol}
+            ${display_state=="game"?this.upper:""}
+            Sorry, your browser does not support inline SVG.  
+        </svg>` ;
     }
 
     click(target) {
         let hole = parseInt(target.id.split('_')[1]) ;
         TV.click(hole);
-        console.log("click",target,hole,target.style.strokeWidth);
         target.style.strokeWidth = TV.checked(hole) ? "30" : "10" ;
     }
 
     layout() { // show layout of foxholes
-        this.svg.innerHTML = this.create_svg(false) ;
-        this.customize(G.foxes.map( (_,i) => i+"" ) ); // numbers not foxes
+        this.svg.innerHTML = this.create_svg("layout") ;
+        this.symbolize(G.foxes.map( (_,i) => i+"" ) ); // numbers not foxes
         this.arrow_location(); // yes arrows
-        this.arrowlist.forEach( (m,i) => m.forEach( mm => document.getElementById("arr"+i+"_"+mm).style.visibility= "visible" ));
-        
-        let cc = document.getElementById("cover_crop");
-        cc.addEventListener('click', () => this.post_layout() );
-        ['x', 'y', 'height','width'].forEach( p=> cc.setAttribute( p, this.vb[p] ) );
-        
-        
+        this.arrow_visibility(G.foxes.map(_=>true));
+    }
+
+    history() { // set up to show history of foxholes
+        this.hslide.min = 0;
+        this.hslide.max = G.day;
+        this.hend();
+    }
+
+    hstart() {
+        this.hslide.value = 0;
+        this.show_history();
+    }
+    hminus() {
+        this.hslide.value = this.hslide.value-1;
+        this.show_history();
+    }
+    hplus() {
+        this.hslide.value = this.hslide.value+1;
+        this.show_history();
+    }
+    hend() {
+        this.hslide.value = G.day;
+        this.show_history();
+    }
+
+    show_history() { // show history of foxholes
+        this.svg.innerHTML = this.create_svg("history") ;
+        let date = this.hslide.value;
+        this.hval.value=date;
+        let obMove = G.history(date);
+        this.symbolize(TV.symbols(obMove)); // numbers not foxes
+        this.arrow_location(); // yes arrows
+        this.arrow_visibility(obMove.foxes);
     }
 
     post_layout() {
         this.control_row(this.symbol_list) // restore fox symbols
         O.resume(); // back to table
     }
-
-    Xmark() {
-        return (this.vb==null) ?
-            "" :
-            `<text id="svg_x" x=${this.vb.x} y=${this.vb.y+100}>&#10006;</text><rect id="svg_xcover" x=${this.vb.x} y=${this.vb.y} width="110" height="110" />`
-            ;
-    }
-
-    add_history_row(s) {
-        this.history.push("");
-    }
-
-    set_boundary() {
-    }        
 }
 
 class GardenView_Circle extends GardenView {
-    start() {
+    configure() {
         let f = G.foxes ; // to get a "foxes" long array, we don't actually use the data now
 
-        this.total_radius = 350*(H.ylength-1) + 350*H.xlength/3 + 200 ; // For inner circle radius (pi=3) plus layers, plus boundary
-        this.transform  = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="rotate(${360*l/H.xlength}) translate(0,${350*h})"`;}) ;
-        this.lower      = f.map( (_,i) => `<circle class="svg_hole" cx="0" cy="-${this.total_radius-200}" r="150" ${this.transform[i]}/>`).join("");
-        this.symbol     = f.map( (_,i) => `<text class="svg_symbol" x="0" y="-${this.total_radius-200-60}" id=${"symbol_"+i} ${this.transform[i]}>&nbsp;</text>`).join("");
-        this.upper      = f.map( (_,i) => `<circle class="svg_click" cx="0" cy="-${this.total_radius-200}" r="150" id=${"upper_"+i} ${this.transform[i]} onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`).join("");
+        // Radii
+        this.R = [(150*2+100)*H.xlength/(2*Math.PI)];
+        for ( let y = 1 ; y < H.ylength ; ++y ) {
+            this.R[y]=this.R[y-1]+350;
+        } 
+        this.total_radius = this.R[H.ylength-1]+200 ; // For inner circle radius plus layers, plus boundary
 
-        // history defs
-        this.Htransform = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="rotate(${360*l/H.xlength}) translate(0,${100*h})"`;}) ;
-        this.Hradius = this.total_radius-400-350*(H.ylength-1);
-        this.Hscale = (this.Hradius-100*H.ylength+50) / (this.Hradius+50) ;
-        this.Hlower = f.map( (_,i) => `<circle class="old_hole" cx="0" cy="-${this.Hradius}" r="50"  ${this.Htransform[i]} />`).join("");
+        this.vb = { // svg viewBox dimensions
+            x: -this.total_radius,
+            y: -this.total_radius,
+            width: 2*this.total_radius,
+            height: 2*this.total_radius,
+        };
+        this.background = `<circle cx="0" cy="0" r="${this.total_radius-200}" class="svg_boundary" />`;
 
-        super.start();
-    }
-    
-    add_history_row(s) {
-        let Tf = s.map( (ss,i) => `<text class="old_fox" x="0" y="-${this.Hradius-20}"  ${this.Htransform[i]}>${ss}</text><`).join("");
-        this.history.push( `<circle cx="0" cy="0" r="${this.Hradius}" stroke="grey" stroke-width="3" fill="none" />${this.Hlower}${Tf}`);
-    }
-        
-    show_history() {
-        if ( this.history.length == 0 ) {
-            return "";
-        } else {
-            return this.history.reduce( (t,x) => `<g transform="scale(${this.Hscale}) rotate(5)">${t}</g>${x}` );
-        }
-    }
-
-    create_svg(show_history=true) {
-        let Thist = show_history ? this.show_history() : this.Xmark() ; 
-        return `<svg id="svg_code" viewBox="-${this.total_radius} -${this.total_radius} ${2*this.total_radius} ${2*this.total_radius}"> preserveAspectRatio="xMidYMid meet" width="100%"
-            <circle cx="0" cy="0" r="${this.total_radius-200}" class="svg_boundary" />
-            <defs>
-                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto" markerUnits="strokeWidth" >
-                    <polygon points="0 0, 10 3.5, 0 7" />
-                </marker>
-            </defs>
-            ${this.lower}
-            ${this.allarrows}
-            ${this.symbol}
-            ${this.upper}
-            ${Thist}
-            <rect x1="0" y1="0" width="0" height="0" id="cover_crop">
-            Sorry, your browser does not support inline SVG.  
-        </svg>` ;
+        // Foxholes lower (has background) symbol (holds inhabitant) upper (for click and border)
+        this.lower      = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `<circle class="svg_hole" cx="0" cy="-${this.R[h]}" r="150" transform="rotate(${360*l/H.xlength})" />`;}).join("");
+        this.symbol     = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `<text class="svg_symbol" x="0" y="-${this.R[h]-60}" id=${"symbol_"+i} transform="rotate(${360*l/H.xlength})" />&nbsp;</text>`;}).join("");
+        this.upper      = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `<circle class="svg_click" cx="0" cy="-${this.R[h]}" r="150" id=${"upper_"+i} transform="rotate(${360*l/H.xlength})" onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`;}).join("");
     }
 }
 
 class GardenView_OffsetCircle extends GardenView {
-    start() {
+    configure() {
         let f = G.foxes ; // to get a "foxes" long array, we don't actually use the data now
 
-        this.total_radius = 303*(H.ylength-1) + 350*H.xlength/3 + 200 ; // For inner circle radius (pi=3) plus layers, plus boundary
-        this.transform  = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="rotate(${360*(l+.5*(h&1))/H.xlength}) translate(0,${303*h})"`;}) ;
-        this.lower      = f.map( (_,i) => `<circle class="svg_hole" cx="0" cy="-${this.total_radius-200}" r="150" ${this.transform[i]}/>`).join("");
-        this.symbol     = f.map( (_,i) => `<text class="svg_symbol" x="0" y="-${this.total_radius-200-60}" id=${"symbol_"+i} ${this.transform[i]}>&nbsp;</text>`).join("");
-        this.upper      = f.map( (_,i) => `<circle class="svg_click" cx="0" cy="-${this.total_radius-200}" r="150" id=${"upper_"+i} ${this.transform[i]} onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`).join("");
+        // Radii
+        this.R = [(150*2+100)*H.xlength/(2*Math.PI)];
+        for ( let y = 1 ; y < H.ylength ; ++y ) {
+            this.R[y]=150+((this.R[y-1]+50)/Math.cos(Math.PI/H.xlength));
+        } 
+        this.total_radius = this.R[H.ylength-1]+200 ; // For inner circle radius plus layers, plus boundary
 
-        // history defs
-        this.Htransform = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="rotate(${360*(l+.5*(h&1))/H.xlength}) translate(0,${78*h})"`;}) ;
-        this.Hradius = this.total_radius-400-303*(H.ylength-1);
-        this.Hscale = (this.Hradius-78*H.ylength+50) / (this.Hradius+50) ;
-        this.Hlower = f.map( (_,i) => `<circle class="old_hole" cx="0" cy="-${this.Hradius}" r="50"  ${this.Htransform[i]} />`).join("");
+        this.vb = { // svg viewBox dimensions
+            x: -this.total_radius,
+            y: -this.total_radius,
+            width: 2*this.total_radius,
+            height: 2*this.total_radius,
+        };
+        this.background = `<circle cx="0" cy="0" r="${this.R[H.ylength-1]}" class="svg_boundary" />`;
 
-        super.start();
-    }
-    
-    add_history_row(s) {
-        let Tf = s.map( (ss,i) => `<text class="old_fox" x="0" y="-${this.Hradius-20}"  ${this.Htransform[i]}>${ss}</text><`).join("");
-        this.history.push( `<circle cx="0" cy="0" r="${this.Hradius}" stroke="grey" stroke-width="3" fill="none" />${this.Hlower}${Tf}`);
-    }
-        
-    show_history() {
-        if ( this.history.length == 0 ) {
-            return "";
-        } else {
-            return this.history.reduce( (t,x) => `<g transform="scale(${this.Hscale}) rotate(5)">${t}</g>${x}` );
-        }
-    }
-
-    create_svg(show_history=true) {
-        let Thist = show_history ? this.show_history() : this.Xmark() ; 
-        return `<svg id="svg_code" viewBox="-${this.total_radius} -${this.total_radius} ${2*this.total_radius} ${2*this.total_radius}"> preserveAspectRatio="xMidYMid meet" width="100%"
-            <circle cx="0" cy="0" r="${this.total_radius-200}" class="svg_boundary" />
-            <defs>
-                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto" markerUnits="strokeWidth" >
-                    <polygon points="0 0, 10 3.5, 0 7" />
-                </marker>
-            </defs>
-            ${this.lower}
-            ${this.allarrows}
-            ${this.symbol}
-            ${this.upper}
-            ${Thist}
-            <rect x1="0" y1="0" width="0" height="0" id="cover_crop">
-            Sorry, your browser does not support inline SVG.  
-        </svg>` ;
+        // Foxholes lower (has background) symbol (holds inhabitant) upper (for click and border)
+        this.lower      = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `<circle class="svg_hole" cx="0" cy="-${this.R[h]}" r="150" transform="rotate(${360*(l+.5*(h&1))/H.xlength})"/>`;}).join("");
+        this.symbol     = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `<text class="svg_symbol" x="0" y="-${this.R[h]-60}" id=${"symbol_"+i} transform="rotate(${360*(l+.5*(h&1))/H.xlength})"/>&nbsp;</text>`;}).join("");
+        this.upper      = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `<circle class="svg_click" cx="0" cy="-${this.R[h]}" r="150" id=${"upper_"+i} transform="rotate(${360*(l+.5*(h&1))/H.xlength})" onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`;}).join("");
     }
 }
 
 class GardenView_Grid extends GardenView {
-    start() {
+    configure() {
         let f = G.foxes ;
+        this.vb = { // svg viewBox dimensions
+            x: -200,
+            y: -250,
+            width: 350*(H.xlength-1)+400,
+            height: 350*H.ylength+400,
+        };
+        this.background = `<rect class="svg_boundary" x="0" y="0" width="${350*(H.xlength-1)}" height="${350*(H.ylength-1)}"/>`;
         this.transform  = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="translate(${l*350},${h*350})"`} ) ;
-        this.lower      = f.map( (_,i) => `<circle class="svg_hole" cx="0" cy="0" r="150" ${this.transform[i]}/>`)
+
+        // Foxholes lower (has background) symbol (holds inhabitant) upper (for click and border)
+        this.lower      = f.map( (_,i) => `<circle class="svg_hole" cx="0" cy="0" r="150" ${this.transform[i]} />`)
                            .join("");
-        this.symbol     = f.map( (_,i) => `<text class="svg_symbol" x="0" y="60" id=${"symbol_"+i} ${this.transform[i]}>&nbsp;</text>`)
+        this.symbol     = f.map( (_,i) => `<text class="svg_symbol" x="0" y="60" id=${"symbol_"+i} ${this.transform[i]} >&nbsp;</text>`)
                            .join("");
         this.upper      = f.map( (_,i) => `<circle class="svg_click" cx="0" cy="0" r="150" ${this.transform[i]} id=${"upper_"+i}  onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`)
                            .join("");
-        this.Htransform = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="translate(${l*350},${200+h*100+350*(H.ylength-1)})"`} ) ;
-        this.Hlower     = f.map( (_,i) => `<circle class="old_hole" cx="0" cy="0" r="50"  ${this.Htransform[i]} />`).join("");
-
-        super.start();
-    }
-    
-    add_history_row(s) {
-        let Tf = s.map( (ss,i) => `<text class="old_fox" x="0" y="25" ${this.Htransform[i]}>${ss}</text>`).join("");
-        this.history.push( `<rect x1="0" y1="0" width="${350*(H.xlength-1)}" height="${100*(H.ylength-1)}" class="svg_hrect" ${this.Htransform[0]} />${this.Hlower}${Tf}` );
-    }
-        
-    show_history() {
-        if ( this.history.length == 0 ) {
-            return "";
-        } else {
-            return this.history.reduce( (t,x) => `<g transform="translate(0,${5+100*H.ylength})">${t}</g>${x}` );
-        }
-    }
-
-    set_boundary() {
-        let r = document.querySelector(".svg_boundary");
-        r.setAttribute( "x", this.X[0]+"" );
-        r.setAttribute( "y", this.Y[0]+"" );
-        r.setAttribute( "width", this.X[H.total-1]+"" );
-        r.setAttribute( "height", this.Y[H.total-1]+"" );
-    }
-
-    create_svg(show_history=true) {
-        let Thist = show_history ? this.show_history() : this.Xmark() ; 
-        return `<svg id="svg_code" viewBox="-200 -250 ${350*(H.xlength-1)+400} 1300"> preserveAspectRatio="xMidYMid meet" width="100%"
-            <rect class="svg_boundary" />
-            <defs>
-                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto" markerUnits="strokeWidth" >
-                    <polygon points="0 0, 10 3.5, 0 7" />
-                </marker>
-            </defs>
-            ${this.lower}
-            ${this.allarrows}
-            ${this.symbol}
-            ${this.upper}
-            ${Thist}
-            <rect x1="0" y1="0" width="0" height="0" id="cover_crop">
-            Sorry, your browser does not support inline SVG.  
-        </svg>` ;
     }
 }
 
 class GardenView_OffsetGrid extends GardenView {
-    start() {
+    configure() {
         let f = G.foxes ;
+        this.vb = { // svg viewBox dimensions
+            x: -200,
+            y: -250,
+            width: 350*(H.xlength-1)+575,
+            height: 303*H.ylength+400,
+        };
+        this.background = `<rect class="svg_boundary" x="0" y="0" width="${350*(H.xlength-1)+(O.real_offset?175:0)}" height="${303*(H.ylength-1)}"/>`;
         this.transform  = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="translate(${l*350+(h&1)*175},${h*303})"`} ) ;
+
+        // Foxholes lower (has background) symbol (holds inhabitant) upper (for click and border)
         this.lower      = f.map( (_,i) => `<circle class="svg_hole" cx="0" cy="0" r="150" ${this.transform[i]}/>`)
                            .join("");
         this.symbol     = f.map( (_,i) => `<text class="svg_symbol" x="0" y="60" id=${"symbol_"+i} ${this.transform[i]}>&nbsp;</text>`)
                            .join("");
         this.upper      = f.map( (_,i) => `<circle class="svg_click" cx="0" cy="0" r="150" ${this.transform[i]} id=${"upper_"+i}  onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`)
                            .join("");
-        this.Htransform = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="translate(${l*350+(h&1)*175},${200+h*100+350*(H.ylength-1)})"`} ) ;
-        this.Hlower     = f.map( (_,i) => `<circle class="old_hole" cx="0" cy="0" r="50"  ${this.Htransform[i]} />`).join("");
-
-        super.start();
-    }
-    
-    add_history_row(s) {
-        let Tf = s.map( (ss,i) => `<text class="old_fox" x="0" y="25" ${this.Htransform[i]}>${ss}</text>`).join("");
-        this.history.push( `<rect x1="0" y1="0" width="${350*(H.xlength-1)+(O.real_offset?175:0)}" height="${100*(H.ylength-1)}" class="svg_hrect" ${this.Htransform[0]} />${this.Hlower}${Tf}` );
-    }
-        
-    show_history() {
-        if ( this.history.length == 0 ) {
-            return "";
-        } else {
-            return this.history.reduce( (t,x) => `<g transform="translate(0,${5+100*H.ylength})">${t}</g>${x}` );
-        }
-    }
-
-    set_boundary() {
-        let r = document.querySelector(".svg_boundary");
-        r.setAttribute( "x", this.X[0]+"" );
-        r.setAttribute( "y", this.Y[0]+"" );
-        r.setAttribute( "width", this.X[O.real_offset?2*H.xlength-1:H.total-1]+"" );
-        r.setAttribute( "height", this.Y[H.total-1]+"" );
-    }
-
-    create_svg(show_history=true) {
-        let Thist = show_history ? this.show_history() : this.Xmark() ; 
-        return `<svg id="svg_code" viewBox="-200 -250 ${350*(H.xlength-1)+575} ${350*(H.xlength-1)+575}"> preserveAspectRatio="xMidYMid meet" width="100%"
-            <rect class="svg_boundary" />
-            <defs>
-                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto" markerUnits="strokeWidth" >
-                    <polygon points="0 0, 10 3.5, 0 7" />
-                </marker>
-            </defs>
-            ${this.lower}
-            ${this.allarrows}
-            ${this.symbol}
-            ${this.upper}
-            ${Thist}
-            <rect x1="0" y1="0" width="0" height="0" id="cover_crop">
-            Sorry, your browser does not support inline SVG.  
-        </svg>` ;
     }
 }
 
@@ -471,7 +373,7 @@ class TableView {
 
     control_row() {
         let r = document.createElement("tr");
-        let s = this.symbols( [], G.poison_list, G.foxes );
+        let s = this.symbols( G.history(G.day) );
         for ( let i = 0; i <= H.total ; ++i ) {
             let d = document.createElement("td");
             if ( i==0 ) {
@@ -499,7 +401,6 @@ class TableView {
             this.remove_row();
             this.remove_row();
             G.back();
-            GV.back();
             this.control_row();
         }
         this.update();
@@ -522,26 +423,26 @@ class TableView {
         this.update();
     }
 
-    symbols( moves, poisons, foxes ) {
+    symbols( obMove ) {
         // moves = list of inspection holes
         // poisons = list of poisoned holes
         // foxes = true/false fox occupation list
         // returns a symbol list
-        if ( G.number == 0 && moves.length==0 ) {
+        if ( G.number == 0 && obMove.moves.length==0 ) {
             // victory
-            return foxes.map( (_,i) => i&1 ? "&#128077;" : "&#128516;" ) ;
+            return obMove.foxes.map( (_,i) => i&1 ? "&#128077;" : "&#128516;" ) ;
         } else {
-            let s = foxes.map( f => f?"&#129418;":"&nbsp;" ) ;
-            moves.forEach( m => s[m] = "&#128064;" );
-            poisons.forEach( p => s[p] = "&#9763;" );
+            let s = obMove.foxes.map( f => f?"&#129418;":"&nbsp;" ) ;
+            obMove.moves.forEach( m => s[m] = "&#128064;" );
+            obMove.poisoned.forEach( p => s[p] = "&#9763;" );
             return s ;
         }
     } 
 
     add_history_row() { // historical row
-        let [m,p,f] = G.prior ;
+        let prior = G.prior ;
         let r = document.createElement("tr");
-        let s = this.symbols( m, p, f );
+        let s = this.symbols( prior );
         for ( let i = 0; i <= H.total ; ++i ) {
             let d = document.createElement("td");
             if ( i==0 ) {
@@ -552,7 +453,6 @@ class TableView {
             r.appendChild(d);
         }
         this.tbody.appendChild(r);
-        GV.add_history_row(s);
     }
 
     remove_row() {
@@ -575,9 +475,6 @@ class TableView {
 }
 
 class Game {
-    constructor () {
-    }
-
     start () {
         this.inspections = [];
         this.date = 0;
@@ -589,16 +486,16 @@ class Game {
         TV.start() ;
     }
 
-    get poison_list() { // returns just the elements as an array
-        return this.poison_array().map( (p,i) => p?i:-1 ).filter( i => i>-1 ) ;
-    }
-
-    poison_array() { // returns true/false array
+    poison_array(date=this.date) { // returns true/false array
         let p = Array(H.total).fill(false);
         if ( O.poison_days > 0 ) {
-            this.inspections.slice(-O.poison_days).forEach( d => d.forEach( i => p[i]=true ) ) ;
+            this.inspections.slice(0,date).slice(-O.poison_days).forEach( d => d.forEach( i => p[i]=true ) ) ;
         }
         return p ; 
+    }
+
+    poison_list(date) { // returns just the elements as an array
+        return this.poison_array(date).map( (p,i) => p?i:-1 ).filter( i => i>-1 ) ;
     }
 
     move( inspect ) { // holes is an array
@@ -643,8 +540,22 @@ class Game {
         return this.stats_history[this.date] ;
     }
 
+    history( date ) {
+        let r = {
+            moves: [],
+            poisoned: [],
+            foxes: Array(H.total).fill(true),
+        };
+        if ( date>=0 && date<=this.date) {
+            r.moves = this.inspections[date]||[];
+            r.poisoned = this.poison_list(date);
+            r.foxes = this.fox_history[date];
+        }
+        return r;
+    }
+
     get prior() {
-        return [this.inspections[this.date-1]||[],[],this.fox_history[this.date-1]];
+        return this.history(this.date-1);
     }
 
     back() { // backup a move
@@ -657,10 +568,6 @@ class Game {
 
     get day() {
         return this.date;
-    }
-
-    get poison_days() {
-        return 1 ;
     }
 
     mod( i, m ) { // modulo rather than remainder
@@ -930,24 +837,34 @@ class Overlay {
     }
         
     hide() {
-        ["svg_view","Ttable","choose","rules"].forEach( d => document.getElementById(d).style.display="none" );
+        ["svg_view","Ttable","choose","rules","BB_table","BB_garden","BB_layout","BB_rules","BB_choose","BB_history"].forEach( d => document.getElementById(d).style.display="none" );
     }
 
     layout() {
         this.hide() ;
         document.getElementById("svg_view").style.display="block";
+        document.getElementById("BB_layout").style.display="inline-flex";
         GV.layout();
+    }
+
+    history() {
+        this.hide() ;
+        document.getElementById("svg_view").style.display="block";
+        document.getElementById("BB_history").style.display="inline-flex";
+        GV.history();
     }
 
     choose() {
         this.hide() ;
         document.getElementById("choose").style.display="block";
+        document.getElementById("BB_choose").style.display="inline-flex";
     }
 
     rules() {
         this.hide() ;
         this.fillin();
         document.getElementById("rules").style.display="block";
+        document.getElementById("BB_rules").style.display="inline-flex";
     }
 
     resume() {
@@ -975,12 +892,18 @@ class Overlay {
         this.is_garden = is_garden ;
         if ( is_garden ) {
             document.getElementById("svg_view").style.display="block";
-            document.getElementById("Bgarden").style.backgroundColor = "white";
-            document.getElementById("Btable").style.backgroundColor = "grey";
+            document.getElementById("BB_garden").style.display="inline-flex";
+            document.getElementById("Bgarden1").style.backgroundColor = "white";
+            document.getElementById("Bgarden2").style.backgroundColor = "white";
+            document.getElementById("Btable1").style.backgroundColor = "grey";
+            document.getElementById("Btable2").style.backgroundColor = "grey";
         } else {
             document.getElementById("Ttable").style.display="block";
-            document.getElementById("Bgarden").style.backgroundColor = "grey";
-            document.getElementById("Btable").style.backgroundColor = "white";
+            document.getElementById("BB_table").style.display="inline-flex";
+            document.getElementById("Bgarden1").style.backgroundColor = "grey";
+            document.getElementById("Bgarden2").style.backgroundColor = "grey";
+            document.getElementById("Btable1").style.backgroundColor = "white";
+            document.getElementById("Btable2").style.backgroundColor = "white";
         }
     }
 
