@@ -18,7 +18,12 @@
                     <a href='https://github.com/alfille/doublefox.github.io'><img src="images/icon.png"></a>
                 </div>
                 <div id="control">
-                    <label>Choose number of &#129418 holes: <input type="number" id="holes" min=3 max=12 step=1 value=5 onchange="O.changeInput()" title="Choose number of foxholes"></label>
+                    <B>Foxholes</B>
+                    <ul>
+                        <li id="line1"></li>
+                        <li id="line2"></li>
+                        <li id="line3"></li>
+                    </ul>
                     <label>Show probabilities: <input type="checkbox" id="stats" onchange="TV.statchange()"></label>
                     <fieldset>
                         <legend>Status</legend>
@@ -98,17 +103,17 @@
                 <fieldset>
                     <legend>Design a Custom Game</legend>
                     <fieldset>
-                        <legend>Hole arrangement</legend>
-                        <label>Holes in a <b>line</b><input type="radio" name="arrange" value="linear" checked></label>
-                        <label>Holes in a <b>circle</b><input type="radio" name="arrange" value="circular"></label>
+                        <legend>Geometry</legend>
+                        <label>Hole arrangement: <input type="radio" name="arrange" value="linear" checked><span>Line</span></label>
+                        <label><input type="radio" name="arrange" value="circular"><span>Circle</span></label>
                         <br>
                         <label>Offset holes? <input type="checkbox" id="offset"></label>
                         <br>
-                        <label>Width: <input type="number" id="width" min=1 max=20 value=1></label>
+                        <label>Length: <input type="number" id="length" class="numberfield" min=1 max=20 value=5></label><b><label> &times; </label></b><label>Width: <input type="number" id="width" class="numberfield" min=1 max=20 value=1></label>
                     </fieldset>
                     <br>
-                    <label>Inspections per day: <input type="number" id="holesper" min=1 max=4 value=1></label><br>
-                    <label>Days hole is poisoned after inspection: <input type="number" id="poisoneddays" min=0 max=4 value=0></label><br>
+                    <label>Inspections per day: <input type="number" class="numberfield" id="holesper" min=1 max=10 value=1></label><br>
+                    <label>Days hole is poisoned after inspection: <input type="number" id="poisoneddays" class="numberfield" min=0 max=10 value=0></label><br>
                 </fieldset>
             </div>
             <div id="rules">
@@ -116,12 +121,12 @@
                     <legend>Brief Foxhole game rules</legend>
                     <h3>Premise</h3>
                     A wily fox is in your garden, hiding in a fox hole.
-                    There are <input type="number" id="rholes" readonly> fox holes in your garden.
+                    There are <input type="number" id="rlength" class="numberfield" readonly>&times;<input type="number" id="rwidth" class="numberfield" readonly> fox holes in your garden.
                     <h3>Fox moves &#129418;</h3>
                     Each night the fox has to move to an adjacent hole. It can't stay in its current hole.
                     <h3>Your moves &#128064;</h3>
                     Each day, you choose holes to inspect and catch the fox if it is there.
-                    You look into <input type="number" id="rvisits" readonly> holes each day.
+                    You look into <input type="number" id="rholesper" readonly> holes each day.
                     <h3>Arrangement</h3>
                     <p id="rarrange"></p>
                     <h3>Poison &#9763;</h3>

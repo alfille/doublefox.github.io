@@ -8,49 +8,53 @@ var TV = null ; // TableView
 var GV = null ; // GardenView
 var O ; // Overlay control
 
-class Holes {
+class Holes { // all geometry info
     constructor() {
-        this.item = document.getElementById("holes");
-        this.read();
-        this.mult = 1; // for more complex shapes
+        this.width = 1; // for more complex shapes
+        this.offset = false;
+        this.real_offset = false; // offset and thick
+
     }
 
-    read() {
-        // get Number of holes from input field
-        let n = parseInt(this.item.value);
-        let update = true ;
-        if (n<1) {
-            // bad input
-            n = 5 ;
-        } else if (n<2) {
-            n = 2;
-        } else if ( n>12 ) {
-            n = 12;
-        } else {
-            update = false;
+    status() {
+        document.getElementById("line1").innerHTML =
+        `${this.holes} long &times; ${this.width} wide arranged in ${this.real_offset?"an offset ":"a "}${O.geometryName}`;
+        document.getElementById("line2").innerHTML =
+        `Inspect ${this.visits} hole${this.visits==1?"":"s"}/day`;
+        document.getElementById("line3").innerHTML =
+        (this.poison_days==0)?`Holes not poisoned`:`Poison lasts ${this.poison_days} days`;
+    }
+
+    cookies() {
+        let x = Cookie.get("holes") ;
+        if ( x ) {
+            console.log(x);
+            H.xlength = x ;
         }
-        if (update) {
-            this.item.value=n;
+        x = Cookie.get("geometry") ;
+        if ( x ) {
+            console.log(x);
+            this.geometry = x ;
         }
-        this.holes = n;
-    }
-
-    get change() {
-        let h = this.holes ;
-        this.read();
-        return ( h != this.holes ) ;
-    }
-
-    set value(h) {
-        if ( h !== this.holes ) {
-            this.item.value = h;
+        x = Cookie.get("visits") ;
+        if ( x ) {
+            console.log(x);
+            this.visits = x ;
         }
-        this.read() ;
+        x = Cookie.get("poison_days") ;
+        if ( x ) {
+            console.log(x);
+            this.poison_days = x ;
+        }
+        x = Cookie.get("offset") ;
+        if ( x ) {
+            console.log(x);
+            this.offset = x ;
+        }
     }
-
+    
     set xlength( m ) {
         this.holes = m;
-        this.item.value = m;
     }
 
     get xlength() { // characteristic length
@@ -58,15 +62,15 @@ class Holes {
     }
 
     set ylength( m ) {
-        this.mult = m ;
+        this.width = m ;
     }
 
     get ylength() {
-        return this.mult;
+        return this.width;
     }
 
     get total() { // get total holes
-        return this.holes * this.mult ;
+        return this.holes * this.width ;
     }
 }
 H = new Holes() ;
@@ -92,9 +96,6 @@ class GardenView {
     }
 
     dimension_control() {
-        let x = Math.min(this.svg.clientWidth,window.innerHeight-this.head.offsetHeight);
-        //this.svg.style.width = x+"px";
-        //this.svg.style.height = x+"px";
         if ( this.X.length == 0 ) {
             // get circle locations (get transform and calculate)
             G.foxes.forEach( (_,i) => {
@@ -170,7 +171,7 @@ class GardenView {
         this.svg.innerHTML = this.create_svg("layout") ;
         this.symbolize(G.foxes.map( (_,i) => i+"" ) ); // numbers not foxes
         this.arrow_location(); // yes arrows
-        this.arrow_visibility(G.foxes.map(_=>true));
+        this.arrow_visibility(G.foxes.map(()=>true));
     }
 
     history() { // set up to show history of foxholes
@@ -295,7 +296,7 @@ class GardenView_OffsetGrid extends GardenView {
             width: 350*(H.xlength-1)+575,
             height: 303*H.ylength+400,
         };
-        this.background = `<rect class="svg_boundary" x="0" y="0" width="${350*(H.xlength-1)+(O.real_offset?175:0)}" height="${303*(H.ylength-1)}"/>`;
+        this.background = `<rect class="svg_boundary" x="0" y="0" width="${350*(H.xlength-1)+(H.real_offset?175:0)}" height="${303*(H.ylength-1)}"/>`;
         this.transform  = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="translate(${l*350+(h&1)*175},${h*303})"`} ) ;
 
         // Foxholes lower (has background) symbol (holds inhabitant) upper (for click and border)
@@ -358,7 +359,7 @@ class TableView {
         let h = [...this.tbody.lastElementChild.querySelectorAll("input")]
             .filter( c=>c.checked )
             .map(c=>parseInt(c.getAttribute("data-n")));
-        if ( h.length == O.visits ) {
+        if ( h.length == H.visits ) {
             this.move(h) ;
         }
     }
@@ -407,7 +408,7 @@ class TableView {
     }
 
     update() {
-        document.getElementById("raided").value=G.day*O.visits;
+        document.getElementById("raided").value=G.day*H.visits;
         if ( this.stats ) {
             let p = this.thead.firstElementChild.childNodes;
             G.stats.forEach( (v,i) => p[i+1].innerText = v.toFixed(3) );
@@ -488,8 +489,8 @@ class Game {
 
     poison_array(date=this.date) { // returns true/false array
         let p = Array(H.total).fill(false);
-        if ( O.poison_days > 0 ) {
-            this.inspections.slice(0,date).slice(-O.poison_days).forEach( d => d.forEach( i => p[i]=true ) ) ;
+        if ( H.poison_days > 0 ) {
+            this.inspections.slice(0,date).slice(-H.poison_days).forEach( d => d.forEach( i => p[i]=true ) ) ;
         }
         return p ; 
     }
@@ -700,119 +701,96 @@ class Overlay {
     constructor () {
         // Parameters  -- standard game first
         this.classic() ;
-        this.cookies() ;
+        H.cookies() ;
+        this.fillin();
         this.is_garden = true; //default
-        this.offset = false;
-        this.real_offset = false; // offset and thick
     }
 
     classic() {
         // Parameters  -- standard game first
-        this.geometry = "grid";
-        this.visits = 1;
-        this.poison_days = 0;
-        this.width = 1;
-        this.offset = false;
+        H.geometry = "grid";
+        H.visits = 1;
+        H.poison_days = 0;
+        H.ylength = 1;
+        H.offset = false;
     }
 
     circle () {
-        this.geometry = "circular";
-        this.visits = 2;
-        this.poison_days = 0;
-        this.width = 1;
-        this.offset = false;
+        H.geometry = "circular";
+        H.visits = 2;
+        H.poison_days = 0;
+        H.ylength = 1;
+        H.offset = false;
     }
 
     poison() {
-        this.geometry = "circular";
-        this.visits = 1;
-        this.poison_days = 1;
-        this.width = 1;
-        this.offset = false;
+        H.geometry = "circular";
+        H.visits = 1;
+        H.poison_days = 1;
+        H.ylength = 1;
+        H.offset = false;
     }
 
     grid() {
-        this.geometry = "grid";
-        this.visits = 3;
-        this.poison_days = 0;
-        this.width = 2;
+        H.geometry = "grid";
+        H.visits = 3;
+        H.poison_days = 0;
+        H.ylength = 2;
     }
 
     custom() {
-        this.geometry = document.querySelector('input[name="arrange"]:checked').value;
-        this.width = document.getElementById('width').value;
-        this.visits = document.getElementById("holesper").value ;
-        this.poison_days = document.getElementById("poisoneddays").value
-        this.offset = document.getElementById("offset").checked;
+        H.geometry = document.querySelector('input[name="arrange"]:checked').value;
+        H.xlength = document.getElementById('length').value;
+        H.ylength = document.getElementById('width').value;
+        H.visits = document.getElementById("holesper").value ;
+        H.poison_days = document.getElementById("poisoneddays").value
+        H.offset = document.getElementById("offset").checked;
     }
 
     fillin() { // updates rule and choose to match current game settings
         // holes
-        document.getElementById("rholes").value = H.xlength;
+        document.getElementById("rlength").value = H.xlength;
+        document.getElementById("length").value = H.xlength;
         Cookie.set("holes",H.xlength);
 
+        // width
+        document.getElementById("rwidth").value = H.ylength;
+        document.getElementById("width").value = H.ylength;
+        Cookie.set("width",H.ylength);
+
         // visits
-        document.getElementById("rvisits").value = this.visits;
-        document.getElementById("holesper").value = this.visits;
-        Cookie.set("visits", this.visits );
+        document.getElementById("rholesper").value = H.visits;
+        document.getElementById("holesper").value = H.visits;
+        Cookie.set("visits", H.visits );
 
         // offset
-        document.getElementById("offset").checked = this.offset;
-        Cookie.set("offset", this.offset );
+        document.getElementById("offset").checked = H.offset;
+        Cookie.set("offset", H.offset );
 
 
         // geometry
-        switch (this.geometry) {
+        switch (H.geometry) {
             case "circular":
-                document.getElementById("rarrange").innerHTML = `The ${H.xlength} foxholes are arranged in a&{this.width>1?" thicker":""} &{this.real_offset?" offset":""} circle.`;
+                document.getElementById("rarrange").innerHTML = `The ${H.xlength} foxholes are arranged in a&{H.ylength>1?" thicker":""} &{H.real_offset?" offset":""} circle.`;
                 break;
             case "grid":
             default:
-                document.getElementById("rarrange").innerHTML = `The ${H.xlength} fox holes are arranged in a&{this.width>1?" thicker":""} &{this.real_offset?" offset":""} line. The fox cannot move past the edges.`;
+                document.getElementById("rarrange").innerHTML = `The ${H.xlength} fox holes are arranged in a&{H.ylength>1?" thicker":""} &{H.real_offset?" offset":""} line. The fox cannot move past the edges.`;
                 break;
             }
-        document.querySelectorAll('input[name="arrange"]').forEach( a => a.checked=(a.value==this.geometry) );
-        Cookie.set("geometry", this.geometry );
+        document.querySelectorAll('input[name="arrange"]').forEach( a => a.checked=(a.value==H.geometry) );
+        Cookie.set("geometry", H.geometry );
 
         // poison
-        if ( this.poison_days==0 ) {
+        if ( H.poison_days==0 ) {
             document.getElementById("rpoison").innerHTML = `Organic! No poisoning. The fox can move back in that very night after your daytime inspection.`;
         } else {
-            document.getElementById("rpoison").innerHTML = `You are a poisoner! The hole is uninhabitable for ${this.poison_days} day(s) after your inspection.`;
+            document.getElementById("rpoison").innerHTML = `You are a poisoner! The hole is uninhabitable for ${H.poison_days} day(s) after your inspection.`;
         }
-        document.getElementById("poisoneddays").value = this.poison_days;
-        Cookie.set("poison_days", this.poison_days );
+        document.getElementById("poisoneddays").value = H.poison_days;
+        Cookie.set("poison_days", H.poison_days );
     }
 
-    cookies() {
-        let x = Cookie.get("holes") ;
-        if ( x ) {
-            console.log(x);
-            H.xlength = x ;
-        }
-        x = Cookie.get("geometry") ;
-        if ( x ) {
-            console.log(x);
-            this.geometry = x ;
-        }
-        x = Cookie.get("visits") ;
-        if ( x ) {
-            console.log(x);
-            this.visits = x ;
-        }
-        x = Cookie.get("poison_days") ;
-        if ( x ) {
-            console.log(x);
-            this.poison_days = x ;
-        }
-        x = Cookie.get("offset") ;
-        if ( x ) {
-            console.log(x);
-            this.offset = x ;
-        }
-        this.fillin() ;
-    }
-    
     select(game_type) {
         switch( game_type) {
             case "classic":
@@ -872,17 +850,19 @@ class Overlay {
     }
 
     newgame() {
-        H.ylength = this.width;
-        this.real_offset = this.offset && (this.width>1) ;
-        switch( this.geometry ) {
+        H.real_offset = H.offset && (H.ylength>1) ;
+        switch( H.geometry ) {
             case "circular":
-                G = this.offset? new Game_OffsetCircle() : new Game_Circle() ;
+                this.geometryName ="circle";
+                G = H.offset? new Game_OffsetCircle() : new Game_Circle() ;
                 break ;
             case "grid":
             default:
-                G = this.offset ? new Game_OffsetGrid() : new Game_Grid() ;
+                this.geometryName = (H.ylength==1)?"line":"grid";
+                G = H.offset ? new Game_OffsetGrid() : new Game_Grid() ;
                 break ;
             }
+        H.status();
         this.garden(this.is_garden)
         G.start();
     }
@@ -904,12 +884,6 @@ class Overlay {
             document.getElementById("Bgarden2").style.backgroundColor = "grey";
             document.getElementById("Btable1").style.backgroundColor = "white";
             document.getElementById("Btable2").style.backgroundColor = "white";
-        }
-    }
-
-    changeInput() {
-        if ( H.change ) {
-            this.newgame() ;
         }
     }
 }

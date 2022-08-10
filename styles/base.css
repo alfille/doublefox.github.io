@@ -32,6 +32,14 @@ body {
         width: 3vw;
     }
 }
+input[type="radio"] {
+    color: black;
+    background-color: white;
+}
+input[type="radio"]:checked + span {
+    font-weight: bolder;
+    border: 1px solid white;
+}
 header {
     background: lightblue;
 }
@@ -55,6 +63,21 @@ header button {
     flex-wrap: nowrap;
     justify-content: left;
 }
+#control input[type="text"] {
+    display: inline-block;
+    width: 5em;
+}
+#control ul {
+    margin-block-start: 0px;
+    margin-block-end: 3px;
+    list-style-type: none;
+    padding-inline-start: 1em;
+}
+#control li:before {
+    content: '🦊';
+    margin-left: -20px;
+    margin-right: 10px;
+}
 #holes {
     width: 2em;
 }
@@ -68,7 +91,7 @@ header button {
     border: 3px solid black;
 }
 .switch button {
-    background-color: #8cd2cd;
+    background-color: #cedad3;
 }
 .switch button:hover {
 	border-color:  red;
@@ -160,14 +183,16 @@ caption {
     color: white;
 }
 #choose legend, #rules legend {
-    background-color: teal;
+    background-color: #038289;
+    color: white;
 }
 #choose button {
-    background-color: #e6f2ff;
+    background-color: #cedad3;
     radius: 5px;
 }
-#holesper, #poisoneddays, #rvisits, #rholes, #width {
-    width: 2em;
+.numberfield {
+    width: 3em;
+    font-weight: bold;
 }
 #rules h3 {
     color: yellow;
