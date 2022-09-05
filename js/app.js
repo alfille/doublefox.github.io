@@ -10,15 +10,16 @@ var O ; // Overlay control
 
 class Holes { // all geometry info
     constructor() {
-        this.width = 1; // for more complex shapes
+        this.ylength = 1; // for more complex shapes
+        this.xlength = 5 ;
+        this.geometry = "grid" ;
         this.offset = false;
-        this.real_offset = false; // offset and thick
 
     }
 
     status() {
         document.getElementById("line1").innerHTML =
-        `${this.holes} long &times; ${this.width} wide arranged in ${this.real_offset?"an offset ":"a "}${O.geometryName}`;
+        `${this.xlength} long &times; ${this.ylength} wide arranged in ${this.real_offset?"an offset ":"a "}${H.geometry}`;
         document.getElementById("line2").innerHTML =
         `Inspect ${this.visits} hole${this.visits==1?"":"s"}/day`;
         document.getElementById("line3").innerHTML =
@@ -26,51 +27,85 @@ class Holes { // all geometry info
     }
 
     cookies() {
-        let x = Cookie.get("holes") ;
-        if ( x ) {
-            console.log(x);
-            H.xlength = x ;
+        this.xlength     = Cookie.get("length") ;
+        this.ylength     = Cookie.get("width") ;
+        this.geometry    = Cookie.get("geometry") ;
+        this.visits      = Cookie.get("visits") ;
+        this.poison_days = Cookie.get("poison_days") ;
+        this.offset      = Cookie.get("offset") ;
+    }
+    
+    validate() {
+        console.log( "pre ",this.xlength,this.ylength,this.geometry,this.visits,this.poison_days,this.offset);
+        this.xlength     = this.checkI( this.xlength    , 1, 30, 5 ) ;
+        this.ylength     = this.checkI( this.ylength    , 1, 30, 1 ) ;
+        this.geometry    = this.checkS( this.geometry   , ["circle","grid",], "grid" ) ;
+        this.visits      = this.checkI( this.visits     , 1, 10, 1 ) ;
+        this.poison_days = this.checkI( this.poison_days, 0, 7, 0 ) ;
+        this.offset      = this.checkB( this.offset     , false ) ;
+        console.log( "post",this.xlength,this.ylength,this.geometry,this.visits,this.poison_days,this.offset);
+    }
+    
+    checkI( x, lo, hi, def ) {
+        // check if Integer
+        try {
+            if ( Number.isInteger(x) ) {
+                if ( x < lo ) {
+                    return lo;
+                } else if ( x > hi ) {
+                    return hi;
+                }
+                return x;
+            } else if ( typeof(x)=="string" ) {
+                return this.checkI( parseInt(x), lo, hi, def ) ;
+            }
+            return def;
         }
-        x = Cookie.get("geometry") ;
-        if ( x ) {
-            console.log(x);
-            this.geometry = x ;
-        }
-        x = Cookie.get("visits") ;
-        if ( x ) {
-            console.log(x);
-            this.visits = x ;
-        }
-        x = Cookie.get("poison_days") ;
-        if ( x ) {
-            console.log(x);
-            this.poison_days = x ;
-        }
-        x = Cookie.get("offset") ;
-        if ( x ) {
-            console.log(x);
-            this.offset = x ;
+        catch(e) {
+            return def;
         }
     }
     
-    set xlength( m ) {
-        this.holes = m;
+    checkB( x, def ) {
+        // check if Boolean
+        try {
+            if ( typeof(x) == "boolean" ) {
+                return x;
+            } else if ( typeof(x)=="string" ) {
+                if ( x=="false" ) {
+                    return false ;
+                }
+                if ( x=="true" ) {
+                    return true ;
+                }
+                return def;
+            }
+            return !!x ;
+        }
+        catch(e) {
+            return def;
+        }
     }
-
-    get xlength() { // characteristic length
-        return this.holes;
+        
+    checkS( x, goodarray, def ) {
+        // check if Boolean
+        try {
+            if ( goodarray.indexOf(x) > -1 ) {
+                return x;
+            }
+            return def;
+        }
+        catch(e) {
+            return def;
+        }
     }
-
-    set ylength( m ) {
-        this.width = m ;
-    }
-
-    get ylength() {
-        return this.width;
-    }
-
+        
     get total() { // get total holes
-        return this.holes * this.width ;
+        return this.xlength * this.ylength ;
+    }
+    
+    get real_offset() { // only if offset and width>1
+        return this.offset && (this.ylength>1) ;
     }
 }
 H = new Holes() ;
@@ -692,6 +727,7 @@ class Cookie { //convenience class
                 ret =  val.substring(name.length);
                 }
         });
+        console.log("Cookie get",cname, ret );
         return ret;
     }
 
@@ -702,6 +738,7 @@ class Overlay {
         // Parameters  -- standard game first
         this.classic() ;
         H.cookies() ;
+        H.validate();
         this.fillin();
         this.is_garden = true; //default
     }
@@ -711,22 +748,25 @@ class Overlay {
         H.geometry = "grid";
         H.visits = 1;
         H.poison_days = 0;
+        H.xlength = 5;
         H.ylength = 1;
         H.offset = false;
     }
 
     circle () {
-        H.geometry = "circular";
+        H.geometry = "circle";
         H.visits = 2;
         H.poison_days = 0;
+        H.xlength = 5;
         H.ylength = 1;
         H.offset = false;
     }
 
     poison() {
-        H.geometry = "circular";
+        H.geometry = "circle";
         H.visits = 1;
         H.poison_days = 1;
+        H.xlength = 5;
         H.ylength = 1;
         H.offset = false;
     }
@@ -735,23 +775,26 @@ class Overlay {
         H.geometry = "grid";
         H.visits = 3;
         H.poison_days = 0;
+        H.xlength = 5;
         H.ylength = 2;
     }
 
     custom() {
+        console.log("custom");
         H.geometry = document.querySelector('input[name="arrange"]:checked').value;
         H.xlength = document.getElementById('length').value;
         H.ylength = document.getElementById('width').value;
         H.visits = document.getElementById("holesper").value ;
         H.poison_days = document.getElementById("poisoneddays").value
         H.offset = document.getElementById("offset").checked;
+        H.validate(); // check values
     }
 
     fillin() { // updates rule and choose to match current game settings
-        // holes
+        // length
         document.getElementById("rlength").value = H.xlength;
         document.getElementById("length").value = H.xlength;
-        Cookie.set("holes",H.xlength);
+        Cookie.set("length",H.xlength);
 
         // width
         document.getElementById("rwidth").value = H.ylength;
@@ -770,12 +813,12 @@ class Overlay {
 
         // geometry
         switch (H.geometry) {
-            case "circular":
-                document.getElementById("rarrange").innerHTML = `The ${H.xlength} foxholes are arranged in a&{H.ylength>1?" thicker":""} &{H.real_offset?" offset":""} circle.`;
+            case "circle":
+                document.getElementById("rarrange").innerHTML = `The ${H.xlength} foxholes are arranged in a${H.ylength>1?" thicker":""} ${H.real_offset?" offset":""} circle.`;
                 break;
             case "grid":
             default:
-                document.getElementById("rarrange").innerHTML = `The ${H.xlength} fox holes are arranged in a&{H.ylength>1?" thicker":""} &{H.real_offset?" offset":""} line. The fox cannot move past the edges.`;
+                document.getElementById("rarrange").innerHTML = `The ${H.xlength} fox holes are arranged in a${H.ylength>1?" thicker":""} ${H.real_offset?" offset":""} line. The fox cannot move past the edges.`;
                 break;
             }
         document.querySelectorAll('input[name="arrange"]').forEach( a => a.checked=(a.value==H.geometry) );
@@ -811,6 +854,7 @@ class Overlay {
             default:
         }
         // fill in fields
+        this.fillin(); // update displays
         this.newgame();
     }
         
@@ -840,7 +884,6 @@ class Overlay {
 
     rules() {
         this.hide() ;
-        this.fillin();
         document.getElementById("rules").style.display="block";
         document.getElementById("BB_rules").style.display="inline-flex";
     }
@@ -850,15 +893,12 @@ class Overlay {
     }
 
     newgame() {
-        H.real_offset = H.offset && (H.ylength>1) ;
         switch( H.geometry ) {
-            case "circular":
-                this.geometryName ="circle";
+            case "circle":
                 G = H.offset? new Game_OffsetCircle() : new Game_Circle() ;
                 break ;
             case "grid":
             default:
-                this.geometryName = (H.ylength==1)?"line":"grid";
                 G = H.offset ? new Game_OffsetGrid() : new Game_Grid() ;
                 break ;
             }
@@ -890,6 +930,24 @@ class Overlay {
 O = new Overlay();
 O.newgame();
 
+class Drag {
+    // Modified from https://www.amitmerchant.com/drag-and-drop-files-native-javascript/
+    static ignore(e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
+    
+    static drop(e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        const dt = e.dataTransfer;
+        const files = dt.files;
+
+        console.log(files);
+    }
+}
+
 // Application starting point
 window.onload = () => {
     // Initial splash screen
@@ -904,5 +962,11 @@ window.onload = () => {
         .register('/sw.js')
         .catch( err => console.log(err) );
     }
+    
+    // For drag and drop
+    let body = document.querySelector("body");
+    body.addEventListener("dragenter", Drag.ignore, false);
+    body.addEventListener("dragover", Drag.ignore, false);
+    body.addEventListener("drop", Drag.drop, false);
     
 };
