@@ -36,14 +36,14 @@ class Holes { // all geometry info
     }
     
     validate() {
-        console.log( "pre ",this.xlength,this.ylength,this.geometry,this.visits,this.poison_days,this.offset);
+        //console.log( "pre ",this.xlength,this.ylength,this.geometry,this.visits,this.poison_days,this.offset);
         this.xlength     = this.checkI( this.xlength    , 1, 30, 5 ) ;
         this.ylength     = this.checkI( this.ylength    , 1, 30, 1 ) ;
         this.geometry    = this.checkS( this.geometry   , ["circle","grid",], "grid" ) ;
         this.visits      = this.checkI( this.visits     , 1, 10, 1 ) ;
         this.poison_days = this.checkI( this.poison_days, 0, 7, 0 ) ;
         this.offset      = this.checkB( this.offset     , false ) ;
-        console.log( "post",this.xlength,this.ylength,this.geometry,this.visits,this.poison_days,this.offset);
+        //console.log( "post",this.xlength,this.ylength,this.geometry,this.visits,this.poison_days,this.offset);
     }
     
     checkI( x, lo, hi, def ) {
@@ -104,7 +104,7 @@ class Holes { // all geometry info
         return this.xlength * this.ylength ;
     }
     
-    get real_offset() { // only if offset and width>1
+    get real_offset() { // only if offset and thick
         return this.offset && (this.ylength>1) ;
     }
 }
@@ -727,7 +727,7 @@ class Cookie { //convenience class
                 ret =  val.substring(name.length);
                 }
         });
-        console.log("Cookie get",cname, ret );
+        //console.log("Cookie get",cname, ret );
         return ret;
     }
 
@@ -937,15 +937,18 @@ class Drag {
         e.preventDefault();
     }
     
-    static drop(e) {
+    static async drop(e) {
         e.stopPropagation();
         e.preventDefault();
 
         const dt = e.dataTransfer;
         const files = dt.files;
+        
+        const data = await new Response(files[0].text()) ;
 
-        console.log(files);
+        console.log(dt,files,data);
     }
+         
 }
 
 // Application starting point
