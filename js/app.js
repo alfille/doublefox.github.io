@@ -208,6 +208,33 @@ class GardenView {
         this.arrow_location(); // yes arrows
         this.arrow_visibility(G.foxes.map(()=>true));
     }
+    
+    key(e) {
+        console.log(e,e.key)
+        if ( O.view == "history" ) {
+            switch (e.key) {
+                case "ArrowLeft":
+                case "PageUp":
+                case "-":
+                    this.hminus() ;
+                    break ;
+                case "ArrowRight":
+                case "PageDown":
+                case "+":
+                    this.hplus() ;
+                    break ;
+                case "Home":
+                    this.hstart() ;
+                    break ;
+                case "End":
+                    this.hend() ;
+                    break ;
+                default:
+                    return ;
+                } ;
+                e.preventDefault();
+        }
+    }
 
     history() { // set up to show history of foxholes
         this.hslide.min = 0;
@@ -741,6 +768,7 @@ class Overlay {
         H.validate();
         this.fillin();
         this.is_garden = true; //default
+        this.view = null ; // what mode is currently shown?
     }
 
     classic() {
@@ -863,6 +891,7 @@ class Overlay {
     }
 
     layout() {
+        this.view = "layout" ;
         this.hide() ;
         document.getElementById("svg_view").style.display="block";
         document.getElementById("BB_layout").style.display="inline-flex";
@@ -870,6 +899,7 @@ class Overlay {
     }
 
     history() {
+        this.view = "history" ;
         this.hide() ;
         document.getElementById("svg_view").style.display="block";
         document.getElementById("BB_history").style.display="inline-flex";
@@ -877,22 +907,26 @@ class Overlay {
     }
 
     choose() {
+        this.view = "choose" ;
         this.hide() ;
         document.getElementById("choose").style.display="block";
         document.getElementById("BB_choose").style.display="inline-flex";
     }
 
     rules() {
+        this.view = "rules" ;
         this.hide() ;
         document.getElementById("rules").style.display="block";
         document.getElementById("BB_rules").style.display="inline-flex";
     }
 
     resume() {
+        this.view = "game" ;
         this.garden( this.is_garden ) ;
     }
 
     newgame() {
+        this.view = "game" ;
         switch( H.geometry ) {
             case "circle":
                 G = H.offset? new Game_OffsetCircle() : new Game_Circle() ;
@@ -935,20 +969,54 @@ class Drag {
     static ignore(e) {
         e.stopPropagation();
         e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
     }
     
-    static async drop(e) {
-        e.stopPropagation();
-        e.preventDefault();
-
-        const dt = e.dataTransfer;
-        const files = dt.files;
+    static drop(e) {
+        const files = e.dataTransfer.files;
+        const dT = new DataTransfer();
         
-        const data = await new Response(files[0].text()) ;
+        const reader = new FileReader();
+        reader.addEventListener( 'load', (e) => {
+            Drag.parse(reader.result) ;
+            }, false  );
+        
+        reader.readAsText( e.dataTransfer.files[0] ) ;
 
-        console.log(dt,files,data);
+        e.preventDefault();
     }
-         
+    
+    static parse(j) {
+        try {
+            let obj = JSON.parse(j) ;
+            if ( 'length' in obj ) {
+                H.xlength = obj.length ;
+            }
+            if ( 'width' in obj ) {
+                H.ylength = obj.width ;
+            }
+            if ( 'visits' in obj ) {
+                H.visits = obj.visits ;
+            }
+            if ( 'poison_days' in obj ) {
+                H.poison_days = obj.poison_days ;
+            }
+            if ( 'offset' in obj ) {
+                H.offset = obj.offset ;
+            }
+            if ( 'geometry' in obj ) {
+                H.geometry = obj.geometry ;
+            }
+            H.validate();
+            O.newgame() ;
+            if ( 'moves' in obj ) {
+                obj.moves.forEach( m => TV.move(m) ) ;
+            }
+        }
+        catch {
+            console.error("Invalid Json file dropped here");
+        }
+    }
 }
 
 // Application starting point
@@ -971,5 +1039,5 @@ window.onload = () => {
     body.addEventListener("dragenter", Drag.ignore, false);
     body.addEventListener("dragover", Drag.ignore, false);
     body.addEventListener("drop", Drag.drop, false);
-    
+    document.addEventListener("keydown", e =>GV.key(e) ) ; 
 };
