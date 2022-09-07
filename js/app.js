@@ -36,14 +36,12 @@ class Holes { // all geometry info
     }
     
     validate() {
-        //console.log( "pre ",this.xlength,this.ylength,this.geometry,this.visits,this.poison_days,this.offset);
         this.xlength     = this.checkI( this.xlength    , 1, 30, 5 ) ;
         this.ylength     = this.checkI( this.ylength    , 1, 30, 1 ) ;
         this.geometry    = this.checkS( this.geometry   , ["circle","grid",], "grid" ) ;
         this.visits      = this.checkI( this.visits     , 1, 10, 1 ) ;
         this.poison_days = this.checkI( this.poison_days, 0, 7, 0 ) ;
         this.offset      = this.checkB( this.offset     , false ) ;
-        //console.log( "post",this.xlength,this.ylength,this.geometry,this.visits,this.poison_days,this.offset);
     }
     
     checkI( x, lo, hi, def ) {
@@ -210,7 +208,6 @@ class GardenView {
     }
     
     key(e) {
-        console.log(e,e.key)
         if ( O.view == "history" ) {
             switch (e.key) {
                 case "ArrowLeft":
@@ -241,25 +238,27 @@ class GardenView {
         this.hslide.max = G.day;
         this.hend();
     }
-
+    
     hstart() {
-        this.hslide.value = 0;
+        this.hcurrent = 0;
         this.show_history();
     }
     hminus() {
-        this.hslide.value = this.hslide.value-1;
+        --this.hcurrent;
         this.show_history();
     }
     hplus() {
-        this.hslide.value = this.hslide.value+1;
+        ++this.hcurrent;
         this.show_history();
     }
     hend() {
-        this.hslide.value = G.day;
+        this.hcurrent = G.day;
         this.show_history();
     }
 
     show_history() { // show history of foxholes
+        this.hslide.value = this.hcurrent ;
+        this.hcurrent = this.hslide.value ;
         this.svg.innerHTML = this.create_svg("history") ;
         let date = this.hslide.value;
         this.hval.value=date;
@@ -808,7 +807,6 @@ class Overlay {
     }
 
     custom() {
-        console.log("custom");
         H.geometry = document.querySelector('input[name="arrange"]:checked').value;
         H.xlength = document.getElementById('length').value;
         H.ylength = document.getElementById('width').value;
