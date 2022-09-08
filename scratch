@@ -1,0 +1,18 @@
+function parseQuery() {
+    // returns a dict of keys/values or null
+    let url = new URL(location.href);
+    let r = {};
+    for ( let [n,v] of url.searchParams) {
+        r[n] = v;
+    }
+    //location.search = "";
+    return r;
+}
+
+const obj = {
+  prop1: "hi there",
+  prop2: "100%",
+  paul: [1,2,3,4],
+};
+const params = new URLSearchParams(obj).toString();
+console.log(params);
