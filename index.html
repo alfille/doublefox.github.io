@@ -75,6 +75,7 @@
         </div>
         <div id="BB_choose" class="switch">
             <button type="button" class="round" onclick="O.select('custom')" title="Use custom game parameters">Start Custom Game</button>
+			<button type="button" class="standard" onclick="Drag.download()" title="Download current game to a JSON file">Download game to file</button>
             <button type="button" class="round" onclick="O.resume()" title="Return to game">Cancel</button>
         </div>
         <div class="working">
@@ -115,6 +116,8 @@
                     <label>Inspections per day: <input type="number" class="numberfield" id="holesper" min=1 max=10 value=1></label><br>
                     <label>Days hole is poisoned after inspection: <input type="number" id="poisoneddays" class="numberfield" min=0 max=10 value=0></label><br>
                 </fieldset>
+                <br>
+
             </div>
             <div id="rules">
                 <fieldset>

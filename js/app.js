@@ -42,6 +42,10 @@ class Holes { // all geometry info
         this.visits      = this.checkI( this.visits     , 1, 10, 1 ) ;
         this.poison_days = this.checkI( this.poison_days, 0, 7, 0 ) ;
         this.offset      = this.checkB( this.offset     , false ) ;
+        if ( this.visits > this.total ) {
+			// can't visit more than the total number of holes
+			this.visits = this.total ;
+		}
     }
     
     checkI( x, lo, hi, def ) {
@@ -976,7 +980,7 @@ class Drag {
         
         const reader = new FileReader();
         reader.addEventListener( 'load', (e) => {
-            Drag.parse(reader.result) ;
+            Drag.Jparse(reader.result) ;
             }, false  );
         
         reader.readAsText( e.dataTransfer.files[0] ) ;
@@ -984,37 +988,77 @@ class Drag {
         e.preventDefault();
     }
     
-    static parse(j) {
+    static Jparse(j) {
+		let obj = null ;
         try {
-            let obj = JSON.parse(j) ;
-            if ( 'length' in obj ) {
-                H.xlength = obj.length ;
-            }
-            if ( 'width' in obj ) {
-                H.ylength = obj.width ;
-            }
-            if ( 'visits' in obj ) {
-                H.visits = obj.visits ;
-            }
-            if ( 'poison_days' in obj ) {
-                H.poison_days = obj.poison_days ;
-            }
-            if ( 'offset' in obj ) {
-                H.offset = obj.offset ;
-            }
-            if ( 'geometry' in obj ) {
-                H.geometry = obj.geometry ;
-            }
-            H.validate();
-            O.newgame() ;
-            if ( 'moves' in obj ) {
-                obj.moves.forEach( m => TV.move(m) ) ;
-            }
+            obj = JSON.parse(j) ;
         }
         catch {
-            console.error("Invalid Json file dropped here");
+            console.error("Invalid Json file");
+            return ;
         }
+        this.validate( obj ) ;
     }
+    
+    static validate( obj ) {
+		let changed = false ;
+		[ ['length','xlength'], ['width','ylength'], 'visits', 'poison_days', 'offset', 'geometry' ]
+		.forEach( (I) => {
+			let k = I;
+			let h = I;
+			if ( Array.isArray(I) ) {
+				k = I[0] ;
+				h = I[1] ;
+			}
+			if ( k in obj ) {
+				changed = true ;
+				H[h] = obj[k] ;
+			}
+		});
+		if ( changed ) {
+			H.validate();
+			O.newgame() ;
+			if ( 'moves' in obj ) {
+				let t = H.total ;
+				if ( obj.moves.every( m => m.every( mm => (mm>=0) && (mm<t) ) ) ) { 
+					obj.moves.forEach( m => TV.move(m) ) ;
+				}
+			}
+		}
+	}
+	
+	static ObjCreate() {
+		// creates an object with the state of the game
+		let obj = {
+			length: H.xlength,
+			width: H.ylength,
+			visits: H.visits,
+			offset: H.offset,
+			geometry: H.geometry,
+			poison_days: H.poison_days,
+		}
+		if ( G.day > 0 ) {
+			if ( G.number==0 ) {
+				obj.solved = true;
+			}
+			obj.moves = G.inspections;
+		}
+		return obj ;
+	}
+	
+	static download() {
+        let csvFile = new Blob([JSON.stringify(Drag.ObjCreate())], {type: 'application/json'});
+        let downloadLink = document.createElement("a");
+        downloadLink.download = [H.geometry,H.xlength,H.ylength,H.visits,H.poison_days,"json"].join(".");
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+        downloadLink.style.display = "none";
+
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+    }
+
+
 }
 
 // Application starting point
