@@ -918,6 +918,12 @@ class Overlay {
     file() {
         this.view = "file" ;
         this.hide() ;
+        // clear upload status
+        document.getElementById("loadstatus").innerText="";
+        // create link
+        let u = new URL( location.href ) ;
+        u.search = new URLSearchParams( Drag.ObjCreate() ).toString() ;
+        document.getElementById("gamelink").href = u ;
         document.getElementById("file").style.display="block";
         document.getElementById("BB_file").style.display="inline-flex";
     }
@@ -971,7 +977,6 @@ class Overlay {
     }
 }
 O = new Overlay();
-O.newgame();
 
 class Drag {
     // Modified from https://www.amitmerchant.com/drag-and-drop-files-native-javascript/
@@ -1000,12 +1005,14 @@ class Drag {
         }
         catch {
             console.error("Invalid Json file");
+            document.getElementById("loadstatus").innerText="Invalid JSON file";
             return ;
         }
         this.validate( obj ) ;
     }
     
     static validate( obj ) {
+        document.getElementById("loadstatus").innerText="Checking...";
         let changed = false ;
         [ ['length','xlength'], ['width','ylength'], 'visits', 'poison_days', 'offset', 'geometry' ]
         .forEach( (I) => {
@@ -1021,6 +1028,7 @@ class Drag {
             }
         });
         if ( changed ) {
+            document.getElementById("loadstatus").innerText="Starting loaded game...";
             H.validate();
             O.newgame() ;
             if ( 'moves' in obj ) {
@@ -1030,6 +1038,7 @@ class Drag {
                 }
             }
         }
+        document.getElementById("loadstatus").innerText="No game settings in file";
     }
     
     static ObjCreate() {
@@ -1064,6 +1073,7 @@ class Drag {
     }
 
     static upload() {
+        document.getElementById("loadstatus").innerText="";
         document.getElementById("upload").click();
     }
     
@@ -1073,7 +1083,15 @@ class Drag {
         
         reader.readAsText( document.getElementById("upload").files[0] ) ;
     }
-
+    
+    static URL() {
+        // parses the initial URL
+        let obj = {} ;
+        let u = new URL(window.location.href ) ;
+        u.searchParams.forEach( (v,k) => console.log(k,v) ) ;
+        u.searchParams.forEach( (v,k) => obj[k] = v ) ;
+        Drag.validate(obj);
+    }
 }
 
 // Application starting point
@@ -1097,4 +1115,7 @@ window.onload = () => {
     body.addEventListener("dragover", Drag.ignore, false);
     body.addEventListener("drop", Drag.drop, false);
     document.addEventListener("keydown", e =>GV.key(e) ) ; 
+
+    O.newgame();
+    Drag.URL();
 };

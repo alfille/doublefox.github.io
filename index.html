@@ -95,13 +95,13 @@
             </div>
             <div id="svg_view" class="svg">
             </div>
-            <div id="choose">
+            <div id="choose" class="backpage">
                 <fieldset>
                     <legend>Quick choices: Standard Games</legend>
-                    <button type="button" class="standard" onclick="O.select('classic')" title="Arranged in a line, one look/day, no poisoning">Classic foxholes</button>
-                    <button type="button" class="standard" onclick="O.select('circle')" title="Arranged in a circle, two looks/day, no poisoning">Circle foxholes</button>
-                    <button type="button" class="standard" onclick="O.select('poison')" title="Arranged in a circle, one look/day, poisoned 1 day">Poison foxholes</button>
-                    <button type="button" class="standard" onclick="O.select('double')" title="Arranged in a double line, one look/day, no poisoning">Double line foxholes</button>
+                    <button type="button" onclick="O.select('classic')" title="Arranged in a line, one look/day, no poisoning">Classic foxholes</button>
+                    <button type="button" onclick="O.select('circle')" title="Arranged in a circle, two looks/day, no poisoning">Circle foxholes</button>
+                    <button type="button" onclick="O.select('poison')" title="Arranged in a circle, one look/day, poisoned 1 day">Poison foxholes</button>
+                    <button type="button" onclick="O.select('double')" title="Arranged in a double line, one look/day, no poisoning">Double line foxholes</button>
                 </fieldset>
                 <br><br>
                 <fieldset>
@@ -120,14 +120,22 @@
                     <label>Days hole is poisoned after inspection: <input type="number" id="poisoneddays" class="numberfield" min=0 max=10 value=0></label><br>
                 </fieldset>
                 <br>
-
             </div>
-            <div id="file">
-                <button type="button" class="standard" onclick="Drag.download()" title="Download current game to a JSON file">Download game to file</button><br>
-                <button type="button" class="standard" onclick="Drag.upload()" title="Load a game from a JSON file">Load from file</button><br>
-                <input type="file" id="upload" onchange="Drag.read()">
+            <div id="file" class="backpage">
+                <fieldset>
+                    <legend>Export</legend>
+                    <button type="button"onclick="Drag.download()" title="Download current game to a JSON file">Download game to file</button><br>
+                    <input type="file" id="upload" onchange="Drag.read()">
+                    <p>Click or copy: <a id=gamelink>Link to current game</a></p>
+                </fieldset>
+                <br>
+                <fieldset>
+                    <legend>Import</legend>
+                    <button type="button"onclick="Drag.upload()" title="Load a game from a JSON file">Load from file</button><br>
+                    <p id=loadstatus>&nbsp;</p>
+                </fieldset>
             </div>
-            <div id="rules">
+            <div id="rules" class="backpage">
                 <fieldset>
                     <legend>Brief Foxhole game rules</legend>
                     <h3>Premise</h3>

@@ -179,23 +179,13 @@ caption {
     font-size: 66px;
     text-anchor: middle;
 }
-#choose label, #rules {
-    color: white;
-}
-#choose legend, #rules legend {
+legend {
     background-color: #038289;
-    color: white;
-}
-#choose button {
-    background-color: #cedad3;
-    radius: 5px;
+    color: white; 
 }
 .numberfield {
     width: 3em;
     font-weight: bold;
-}
-#rules h3 {
-    color: yellow;
 }
 #svg_code {
     background: green;
@@ -219,14 +209,26 @@ caption {
     readonly: true;
     width: 3vw;
 }
-#file {
-    text-align: center;
-    padding: 10px;
-}
-#file * {
-    margin: 10px;
-}
 #upload {
     display:none;
 }
-
+#loadstatus {
+    color: pink;
+}
+.backpage {
+    color: white;
+    padding: 10px;
+}
+.backpage button {
+    background-color: #cedad3;
+    border-radius: 4px;
+}
+.backpage h3 {
+    color: yellow;
+}
+.backpage a {
+    color:#ffccff;
+}
+.backpage a:hover {
+    color:#ffe6ff;
+}
