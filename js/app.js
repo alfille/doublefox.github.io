@@ -1088,8 +1088,18 @@ class Drag {
         // parses the initial URL
         let obj = {} ;
         let u = new URL(window.location.href ) ;
-        u.searchParams.forEach( (v,k) => console.log(k,v) ) ;
+        u.searchParams.forEach( (v,k) => console.log(k,v,typeof(v)) ) ;
         u.searchParams.forEach( (v,k) => obj[k] = v ) ;
+        if ( 'moves' in obj ) {
+			let l = obj.moves.split(",");
+			let m = [] ;
+			while ( l.length >= H.visits ) {
+				m.push( [l.slice(H.visits)] );
+				l = l.slice(H.visits) ;
+				console.log(m,l);
+			}
+			obj.moves = m
+		}
         Drag.validate(obj);
     }
 }
