@@ -65,18 +65,21 @@
             <input  type="range" id="Hslide" oninput="GV.show_history()"/>
             <button type="button" id="Hforeward" class="round" onclick="GV.hplus()" title="more recent">&nbsp;&#x23e9;&nbsp;</button>
             <button type="button" id="Hend" class="round" onclick="GV.hend()" title="most recent">&nbsp;&#x23ed;&nbsp;</button>
-            <button type="button" class="round" onclick="GV.post_layout()" title="Return to game">Exit</button>
+            <button type="button" class="round" onclick="GV.post_layout()" title="Return to game">&#10006;</button></button>
         </div>
         <div id="BB_rules" class="switch">
-            <button type="button" class="round" onclick="O.resume()" title="Return to game">Return to game</button>
+            <button type="button" class="round" onclick="O.resume()" title="Return to game">Back</button>
         </div>
         <div id="BB_layout" class="switch">
-            <button type="button" class="round" onclick="GV.post_layout()" title="Return to game">Close layout</button>
+            <button type="button" class="round" onclick="GV.post_layout()" title="Return to game">Back</button>
         </div>
         <div id="BB_choose" class="switch">
             <button type="button" class="round" onclick="O.select('custom')" title="Use custom game parameters">Start Custom Game</button>
-			<button type="button" class="standard" onclick="Drag.download()" title="Download current game to a JSON file">Download game to file</button>
-            <button type="button" class="round" onclick="O.resume()" title="Return to game">Cancel</button>
+            <button type="button" class="round" onclick="O.file()" title="Load or write game file">File...</button>
+            <button type="button" class="round" onclick="O.resume()" title="Return to game">Back</button>
+        </div>
+        <div id="BB_file" class="switch">
+            <button type="button" class="round" onclick="O.resume()" title="Return to game">Back</button>
         </div>
         <div class="working">
             <div id="Ttable">
@@ -118,6 +121,11 @@
                 </fieldset>
                 <br>
 
+            </div>
+            <div id="file">
+                <button type="button" class="standard" onclick="Drag.download()" title="Download current game to a JSON file">Download game to file</button><br>
+                <button type="button" class="standard" onclick="Drag.upload()" title="Load a game from a JSON file">Load from file</button><br>
+                <input type="file" id="upload" onchange="Drag.read()">
             </div>
             <div id="rules">
                 <fieldset>

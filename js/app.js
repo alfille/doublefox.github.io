@@ -43,9 +43,9 @@ class Holes { // all geometry info
         this.poison_days = this.checkI( this.poison_days, 0, 7, 0 ) ;
         this.offset      = this.checkB( this.offset     , false ) ;
         if ( this.visits > this.total ) {
-			// can't visit more than the total number of holes
-			this.visits = this.total ;
-		}
+            // can't visit more than the total number of holes
+            this.visits = this.total ;
+        }
     }
     
     checkI( x, lo, hi, def ) {
@@ -889,7 +889,7 @@ class Overlay {
     }
         
     hide() {
-        ["svg_view","Ttable","choose","rules","BB_table","BB_garden","BB_layout","BB_rules","BB_choose","BB_history"].forEach( d => document.getElementById(d).style.display="none" );
+        ["svg_view","Ttable","choose","rules","file","BB_table","BB_garden","BB_layout","BB_rules","BB_choose","BB_history","BB_file"].forEach( d => document.getElementById(d).style.display="none" );
     }
 
     layout() {
@@ -913,6 +913,13 @@ class Overlay {
         this.hide() ;
         document.getElementById("choose").style.display="block";
         document.getElementById("BB_choose").style.display="inline-flex";
+    }
+
+    file() {
+        this.view = "file" ;
+        this.hide() ;
+        document.getElementById("file").style.display="block";
+        document.getElementById("BB_file").style.display="inline-flex";
     }
 
     rules() {
@@ -979,9 +986,7 @@ class Drag {
         const dT = new DataTransfer();
         
         const reader = new FileReader();
-        reader.addEventListener( 'load', (e) => {
-            Drag.Jparse(reader.result) ;
-            }, false  );
+        reader.onload= () => Drag.Jparse(reader.result) ;
         
         reader.readAsText( e.dataTransfer.files[0] ) ;
 
@@ -989,7 +994,7 @@ class Drag {
     }
     
     static Jparse(j) {
-		let obj = null ;
+        let obj = null ;
         try {
             obj = JSON.parse(j) ;
         }
@@ -1001,52 +1006,52 @@ class Drag {
     }
     
     static validate( obj ) {
-		let changed = false ;
-		[ ['length','xlength'], ['width','ylength'], 'visits', 'poison_days', 'offset', 'geometry' ]
-		.forEach( (I) => {
-			let k = I;
-			let h = I;
-			if ( Array.isArray(I) ) {
-				k = I[0] ;
-				h = I[1] ;
-			}
-			if ( k in obj ) {
-				changed = true ;
-				H[h] = obj[k] ;
-			}
-		});
-		if ( changed ) {
-			H.validate();
-			O.newgame() ;
-			if ( 'moves' in obj ) {
-				let t = H.total ;
-				if ( obj.moves.every( m => m.every( mm => (mm>=0) && (mm<t) ) ) ) { 
-					obj.moves.forEach( m => TV.move(m) ) ;
-				}
-			}
-		}
-	}
-	
-	static ObjCreate() {
-		// creates an object with the state of the game
-		let obj = {
-			length: H.xlength,
-			width: H.ylength,
-			visits: H.visits,
-			offset: H.offset,
-			geometry: H.geometry,
-			poison_days: H.poison_days,
-		}
-		if ( G.day > 0 ) {
-			if ( G.number==0 ) {
-				obj.solved = true;
-			}
-			obj.moves = G.inspections;
-		}
-		return obj ;
-	}
-	
-	static download() {
+        let changed = false ;
+        [ ['length','xlength'], ['width','ylength'], 'visits', 'poison_days', 'offset', 'geometry' ]
+        .forEach( (I) => {
+            let k = I;
+            let h = I;
+            if ( Array.isArray(I) ) {
+                k = I[0] ;
+                h = I[1] ;
+            }
+            if ( k in obj ) {
+                changed = true ;
+                H[h] = obj[k] ;
+            }
+        });
+        if ( changed ) {
+            H.validate();
+            O.newgame() ;
+            if ( 'moves' in obj ) {
+                let t = H.total ;
+                if ( obj.moves.every( m => m.every( mm => (mm>=0) && (mm<t) ) ) ) { 
+                    obj.moves.forEach( m => TV.move(m) ) ;
+                }
+            }
+        }
+    }
+    
+    static ObjCreate() {
+        // creates an object with the state of the game
+        let obj = {
+            length: H.xlength,
+            width: H.ylength,
+            visits: H.visits,
+            offset: H.offset,
+            geometry: H.geometry,
+            poison_days: H.poison_days,
+        }
+        if ( G.day > 0 ) {
+            if ( G.number==0 ) {
+                obj.solved = true;
+            }
+            obj.moves = G.inspections;
+        }
+        return obj ;
+    }
+    
+    static download() {
         let csvFile = new Blob([JSON.stringify(Drag.ObjCreate())], {type: 'application/json'});
         let downloadLink = document.createElement("a");
         downloadLink.download = [H.geometry,H.xlength,H.ylength,H.visits,H.poison_days,"json"].join(".");
@@ -1058,6 +1063,16 @@ class Drag {
         downloadLink.remove();
     }
 
+    static upload() {
+        document.getElementById("upload").click();
+    }
+    
+    static read(e) {
+        const reader = new FileReader();
+        reader.onload= () => Drag.Jparse(reader.result) ;
+        
+        reader.readAsText( document.getElementById("upload").files[0] ) ;
+    }
 
 }
 
