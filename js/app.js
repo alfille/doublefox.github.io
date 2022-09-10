@@ -123,8 +123,7 @@ class GardenView {
     }
 
     start() {
-        this.arrowlist = G.foxes.map( (_,i) => G.fox_moves(i) ) ;
-        this.allarrows = this.arrowlist.map( (m,i) => m.map( mm => `<line id=${"arr"+i+"_"+mm} x1="0" y1="0" x2="0" y2="0" class="svg_arrow" marker-end="url(#arrowhead)" visibility="hidden" />`).join("")
+        this.allarrows = G.fox_moves.map( (m,i) => m.map( mm => `<line id=${"arr"+i+"_"+mm} x1="0" y1="0" x2="0" y2="0" class="svg_arrow" marker-end="url(#arrowhead)" visibility="hidden" />`).join("")
             ).join("");
         this.X = [] ; // coordinates of holes
         this.Y = [] ;
@@ -147,7 +146,7 @@ class GardenView {
     }
 
     arrow_location() {
-        this.arrowlist.forEach( (m,i) => m.forEach( mm => {
+        G.fox_moves.forEach( (m,i) => m.forEach( mm => {
             let ll = document.getElementById("arr"+i+"_"+mm) ;
             ll.setAttribute( "x1", this.X[i]+"" ) ;
             ll.setAttribute( "y1", this.Y[i]+"" ) ;
@@ -161,7 +160,7 @@ class GardenView {
     }
 
     arrow_visibility(flist) {
-        flist.forEach( (f,i) => this.arrowlist[i].forEach( m => document.getElementById("arr"+i+"_"+m).style.visibility= f?"visible":"hidden" ));
+        flist.forEach( (f,i) => G.fox_moves[i].forEach( m => document.getElementById("arr"+i+"_"+m).style.visibility= f?"visible":"hidden" ));
     }
 
     control_row(symbol_list) {
@@ -298,9 +297,9 @@ class GardenView_Circle extends GardenView {
         this.background = `<circle cx="0" cy="0" r="${this.total_radius-200}" class="svg_boundary" />`;
 
         // Foxholes lower (has background) symbol (holds inhabitant) upper (for click and border)
-        this.lower      = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `<circle class="svg_hole" cx="0" cy="-${this.R[h]}" r="150" transform="rotate(${360*l/H.xlength})" />`;}).join("");
-        this.symbol     = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `<text class="svg_symbol" x="0" y="-${this.R[h]-60}" id=${"symbol_"+i} transform="rotate(${360*l/H.xlength})" />&nbsp;</text>`;}).join("");
-        this.upper      = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `<circle class="svg_click" cx="0" cy="-${this.R[h]}" r="150" id=${"upper_"+i} transform="rotate(${360*l/H.xlength})" onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`;}).join("");
+        this.lower      = f.map( (_,i) => { let [l,h]=Game.split(i,H.xlength); return `<circle class="svg_hole" cx="0" cy="-${this.R[h]}" r="150" transform="rotate(${360*l/H.xlength})" />`;}).join("");
+        this.symbol     = f.map( (_,i) => { let [l,h]=Game.split(i,H.xlength); return `<text class="svg_symbol" x="0" y="-${this.R[h]-60}" id=${"symbol_"+i} transform="rotate(${360*l/H.xlength})" />&nbsp;</text>`;}).join("");
+        this.upper      = f.map( (_,i) => { let [l,h]=Game.split(i,H.xlength); return `<circle class="svg_click" cx="0" cy="-${this.R[h]}" r="150" id=${"upper_"+i} transform="rotate(${360*l/H.xlength})" onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`;}).join("");
     }
 }
 
@@ -324,9 +323,9 @@ class GardenView_OffsetCircle extends GardenView {
         this.background = `<circle cx="0" cy="0" r="${this.R[H.ylength-1]}" class="svg_boundary" />`;
 
         // Foxholes lower (has background) symbol (holds inhabitant) upper (for click and border)
-        this.lower      = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `<circle class="svg_hole" cx="0" cy="-${this.R[h]}" r="150" transform="rotate(${360*(l+.5*(h&1))/H.xlength})"/>`;}).join("");
-        this.symbol     = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `<text class="svg_symbol" x="0" y="-${this.R[h]-60}" id=${"symbol_"+i} transform="rotate(${360*(l+.5*(h&1))/H.xlength})"/>&nbsp;</text>`;}).join("");
-        this.upper      = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `<circle class="svg_click" cx="0" cy="-${this.R[h]}" r="150" id=${"upper_"+i} transform="rotate(${360*(l+.5*(h&1))/H.xlength})" onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`;}).join("");
+        this.lower      = f.map( (_,i) => { let [l,h]=Game.split(i,H.xlength); return `<circle class="svg_hole" cx="0" cy="-${this.R[h]}" r="150" transform="rotate(${360*(l+.5*(h&1))/H.xlength})"/>`;}).join("");
+        this.symbol     = f.map( (_,i) => { let [l,h]=Game.split(i,H.xlength); return `<text class="svg_symbol" x="0" y="-${this.R[h]-60}" id=${"symbol_"+i} transform="rotate(${360*(l+.5*(h&1))/H.xlength})"/>&nbsp;</text>`;}).join("");
+        this.upper      = f.map( (_,i) => { let [l,h]=Game.split(i,H.xlength); return `<circle class="svg_click" cx="0" cy="-${this.R[h]}" r="150" id=${"upper_"+i} transform="rotate(${360*(l+.5*(h&1))/H.xlength})" onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`;}).join("");
     }
 }
 
@@ -340,7 +339,7 @@ class GardenView_Grid extends GardenView {
             height: 350*H.ylength+400,
         };
         this.background = `<rect class="svg_boundary" x="0" y="0" width="${350*(H.xlength-1)}" height="${350*(H.ylength-1)}"/>`;
-        this.transform  = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="translate(${l*350},${h*350})"`} ) ;
+        this.transform  = f.map( (_,i) => { let [l,h]=Game.split(i,H.xlength); return `transform="translate(${l*350},${h*350})"`} ) ;
 
         // Foxholes lower (has background) symbol (holds inhabitant) upper (for click and border)
         this.lower      = f.map( (_,i) => `<circle class="svg_hole" cx="0" cy="0" r="150" ${this.transform[i]} />`)
@@ -362,7 +361,7 @@ class GardenView_OffsetGrid extends GardenView {
             height: 303*H.ylength+400,
         };
         this.background = `<rect class="svg_boundary" x="0" y="0" width="${350*(H.xlength-1)+(H.real_offset?175:0)}" height="${303*(H.ylength-1)}"/>`;
-        this.transform  = f.map( (_,i) => { let [l,h]=G.split(i,H.xlength); return `transform="translate(${l*350+(h&1)*175},${h*303})"`} ) ;
+        this.transform  = f.map( (_,i) => { let [l,h]=Game.split(i,H.xlength); return `transform="translate(${l*350+(h&1)*175},${h*303})"`} ) ;
 
         // Foxholes lower (has background) symbol (holds inhabitant) upper (for click and border)
         this.lower      = f.map( (_,i) => `<circle class="svg_hole" cx="0" cy="0" r="150" ${this.transform[i]}/>`)
@@ -541,6 +540,10 @@ class TableView {
 }
 
 class Game {
+	constructor() {
+        this.fox_moves = [] ;
+	}
+	
     start () {
         this.inspections = [];
         this.date = 0;
@@ -586,7 +589,7 @@ class Game {
         
          plist.forEach( (p,h) => {
             if ( !p ) {
-                let esc = this.fox_moves(h) ; // all moves
+                let esc = this.fox_moves[h] ; // all moves
                 let e = esc.filter( ee=> !plist[ee] ) ; // exclude poisoned
                 e.forEach( ee => current_fox[h] ||= old_locations[ee] );
                 e.forEach( ee => current_stats[h] += old_stats[ee]/esc.length );
@@ -636,7 +639,7 @@ class Game {
         return this.date;
     }
 
-    mod( i, m ) { // modulo rather than remainder
+    static mod( i, m ) { // modulo rather than remainder
         let r = i % m ;
         while ( r < 0 ) {
             r += Math.abs(m) ;
@@ -644,32 +647,32 @@ class Game {
         return r ;
     }
 
-    wrap( i , m ) {
-        let j = this.mod(i,m) ;
+    static wrap( i , m ) {
+        let j = Game.mod(i,m) ;
         while ( j > m ) {
             j -= Math.abs(m);
         }
         return j;
     }
 
-    wrap_neighbors( i , m ) {
-        return [ this.wrap(i+1,m), this.wrap(i-1,m) ];
+    static wrap_neighbors( i , m ) {
+        return [ Game.wrap(i+1,m), Game.wrap(i-1,m) ];
     }
 
-    limit( ar, m ) { // array ar
+    static limit( ar, m ) { // array ar
         return ar.filter( a => a>=0 && a<m );
     }
 
-    limit_neighbors( i , m ) {
-        return this.limit([i-1,i+1],m);
+    static limit_neighbors( i , m ) {
+        return Game.limit([i-1,i+1],m);
     }
 
-    split( i, m ) { //return low to high
-        let low = this.mod(i,m);
+    static split( i, m ) { //return low to high
+        let low = Game.mod(i,m);
         return [ low, Math.round((i-low)/m) ];
     }
 
-    combine( lo, hi, m ) {
+    static combine( lo, hi, m ) {
         return hi * m + lo;
     }
 }
@@ -679,13 +682,13 @@ class Game_Circle extends Game {
         super() ;
         TV = new TableView() ;
         GV = new GardenView_Circle() ;
-    }
-
-    fox_moves (h) { // returns an array of landing spots
-        let [ lo,hi ] = G.split( h, H.xlength ) ;
-        return this.wrap_neighbors(lo,H.xlength).map(l=>[l,hi])
-            .concat( this.limit_neighbors(hi,H.ylength).map(h=>[lo,h]) )
-            .map( x=> this.combine( x[0], x[1], H.xlength ) );
+		for ( let h = 0 ; h<H.total ; ++h ) {
+			let [ lo,hi ] = Game.split( h, H.xlength ) ;
+			this.fox_moves.push( Game.wrap_neighbors(lo,H.xlength).map(l=>[l,hi])
+				.concat( Game.limit_neighbors(hi,H.ylength).map(h=>[lo,h]) )
+				.map( x=> Game.combine( x[0], x[1], H.xlength ) )
+				);
+		}
     }
 }
 
@@ -694,15 +697,16 @@ class Game_OffsetCircle extends Game {
         super() ;
         TV = new TableView() ;
         GV = new GardenView_OffsetCircle() ;
-    }
 
-    fox_moves (holes) { // returns an array of landing spots
-        let [ lo,hi ] = G.split( holes, H.xlength ) ;
-        let r = this.wrap_neighbors( lo, H.xlength ).map( l=>[l,hi] ) ; // horizontal
-        this.limit_neighbors( hi, H.ylength ) //vertical
-            .forEach( h => [lo-(h&1),lo+1-(h&1)].forEach( l=>r.push( [this.wrap( l, H.xlength ),h]))
-            );
-        return r.map( x=> this.combine( x[0], x[1], H.xlength )) ;
+		for ( let h = 0 ; h<H.total ; h++ ) {
+			let [ lo,hi ] = Game.split( h, H.xlength ) ;
+			let r = Game.wrap_neighbors( lo, H.xlength ).map( l=>[l,hi] ) ; // horizontal
+			Game.limit_neighbors( hi, H.ylength ) //vertical
+				.forEach( h => [lo-(h&1),lo+1-(h&1)].forEach( l=>r.push( [Game.wrap( l, H.xlength ),h]))
+				);
+				console.log(this.fox_moves);
+			this.fox_moves.push( r.map( x=> Game.combine( x[0], x[1], H.xlength )) ) ;
+		}
     }
 }
 
@@ -711,13 +715,16 @@ class Game_Grid extends Game {
         super() ;
         TV = new TableView() ;
         GV = new GardenView_Grid() ;
-    }
-
-    fox_moves (h) { // returns an array of landing spots
-        let [ lo,hi ] = G.split( h, H.xlength ) ;
-        return  this.limit_neighbors(lo,H.xlength).map(l=>[l,hi])
-            .concat( this.limit_neighbors(hi,H.ylength).map(h=>[lo,h]) )
-            .map( x=> this.combine( x[0], x[1], H.xlength) );
+        
+        for ( let h = 0 ; h<H.total ; ++h ) {
+			let [ lo,hi ] = Game.split( h, H.xlength ) ;
+			this.fox_moves.push(
+				Game.limit_neighbors(lo,H.xlength)
+					.map(l=>[l,hi])
+					.concat( Game.limit_neighbors(hi,H.ylength).map(h=>[lo,h]) )
+					.map( x=> Game.combine( x[0], x[1], H.xlength) )
+				) ;
+		}
     }
 }
 
@@ -726,15 +733,15 @@ class Game_OffsetGrid extends Game {
         super() ;
         TV = new TableView() ;
         GV = new GardenView_OffsetGrid() ;
-    }
 
-    fox_moves (holes) { // returns an array of landing spots
-        let [ lo,hi ] = G.split( holes, H.xlength ) ;
-        let r = this.limit_neighbors( lo, H.xlength ).map( l=>[l,hi] ) ; // horizontal
-        this.limit_neighbors( hi, H.ylength ) //vertical
-            .forEach( h => this.limit( [lo-(h&1),lo+1-(h&1)], H.xlength ).forEach( l => r.push( [l,h] ) )
-            );
-        return r.map( x=> this.combine( x[0], x[1], H.xlength )) ;
+        for ( let h = 0 ; h<H.total ; ++h ) {
+			let [ lo,hi ] = Game.split( holes, H.xlength ) ;
+			let r = Game.limit_neighbors( lo, H.xlength ).map( l=>[l,hi] ) ; // horizontal
+			Game.limit_neighbors( hi, H.ylength ) //vertical
+				.forEach( h => Game.limit( [lo-(h&1),lo+1-(h&1)], H.xlength ).forEach( l => r.push( [l,h] ) )
+				);
+			this.fox_moves.push( r.map( x=> Game.combine( x[0], x[1], H.xlength )) );
+		}
     }
 }
 
@@ -1091,14 +1098,14 @@ class Drag {
         u.searchParams.forEach( (v,k) => console.log(k,v,typeof(v)) ) ;
         u.searchParams.forEach( (v,k) => obj[k] = v ) ;
         if ( 'moves' in obj ) {
-			let l = obj.moves.split(",");
-			let m = [] ;
-			while ( l.length >= H.visits ) {
-				m.push( [l.slice(H.visits)] );
-				l = l.slice(H.visits) ;
-				console.log(m,l);
+			// moves gets converted to a flat text list. -- need to reparse
+			let flat = obj.moves.split(",");
+			let arrays = [] ;
+			while ( flat.length >= H.visits ) {
+				arrays.push( [flat.slice(H.visits)] );
+				flat = flat.slice(H.visits) ;
 			}
-			obj.moves = m
+			obj.moves = arrays
 		}
         Drag.validate(obj);
     }
