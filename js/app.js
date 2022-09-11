@@ -38,7 +38,7 @@ class Holes { // all geometry info
     validate() {
         this.xlength     = this.checkI( this.xlength    , 1, 30, 5 ) ;
         this.ylength     = this.checkI( this.ylength    , 1, 30, 1 ) ;
-        this.geometry    = this.checkS( this.geometry   , ["circle","grid",], "grid" ) ;
+        this.geometry    = this.checkS( this.geometry   , ["circle","grid","triangle"], "grid" ) ;
         this.visits      = this.checkI( this.visits     , 1, 10, 1 ) ;
         this.poison_days = this.checkI( this.poison_days, 0, 7, 0 ) ;
         this.offset      = this.checkB( this.offset     , false ) ;
@@ -103,7 +103,13 @@ class Holes { // all geometry info
     }
         
     get total() { // get total holes
-        return this.xlength * this.ylength ;
+        switch( this.geometry ) {
+            case "grid":
+            case "circle":
+                return this.xlength * this.ylength ;
+            case "triangle":
+                return this.xlength*(this.xlength+1)/2;
+            }
     }
     
     get real_offset() { // only if offset and thick
@@ -274,6 +280,28 @@ class GardenView {
     post_layout() {
         this.control_row(this.symbol_list) // restore fox symbols
         O.resume(); // back to table
+    }
+}
+
+class GardenView_Triangle extends GardenView {
+    configure() {
+        let f = G.foxes ;
+        this.vb = { // svg viewBox dimensions
+            x: -200,
+            y: -250,
+            width: 350*(H.xlength-1)+400,
+            height: 350*H.xlength+400,
+        };
+        this.background = `<rect class="svg_boundary" x="0" y="0" width="${350*(H.xlength-1)}" height="${350*(H.ylength-1)}"/>`;
+        this.transform  = f.map( (_,i) => { let [l,h]=Game.trisplit(i); return `transform="translate(${l*350},${h*350})"`} ) ;
+
+        // Foxholes lower (has background) symbol (holds inhabitant) upper (for click and border)
+        this.lower      = f.map( (_,i) => `<circle class="svg_hole" cx="0" cy="0" r="150" ${this.transform[i]} />`)
+                           .join("");
+        this.symbol     = f.map( (_,i) => `<text class="svg_symbol" x="0" y="60" id=${"symbol_"+i} ${this.transform[i]} >&nbsp;</text>`)
+                           .join("");
+        this.upper      = f.map( (_,i) => `<circle class="svg_click" cx="0" cy="0" r="150" ${this.transform[i]} id=${"upper_"+i}  onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`)
+                           .join("");
     }
 }
 
@@ -667,13 +695,52 @@ class Game {
         return Game.limit([i-1,i+1],m);
     }
 
-    static split( i, m ) { //return low to high
+    static split( i, m ) { //return indexes low to high
         let low = Game.mod(i,m);
         return [ low, Math.round((i-low)/m) ];
     }
 
     static combine( lo, hi, m ) {
         return hi * m + lo;
+    }
+
+    static tricombine( lo, hi ) {
+        return this.trirows[hi]+lo-hi ;
+    }
+
+    static triset() {
+        this.trirows=[0] ;
+        for ( let h=1 ; h<H.xlength ; h++ ) {
+            this.trirows[h] = h+1+this.trirows[h-1] ;
+        }
+    }
+
+    static trisplit( i ) { //return low to high
+        for ( let h=0 ; h<H.xlength ; h++ ) {
+            if ( i <= this.trirows[h] ) {
+                return [ i+h-this.trirows[h], h ] ;
+            }
+        }
+    }
+        
+}
+
+class Game_Triangle extends Game {
+   constructor() {
+        super() ;
+        TV = new TableView() ;
+        GV = new GardenView_Triangle() ;
+
+        Game.triset() ; // set up row ends
+        for ( let h = 0 ; h<H.total ; ++h ) {
+			let [ lo,hi ] = Game.trisplit( h ) ;
+			this.fox_moves.push(
+				Game.limit_neighbors(lo,hi+1)
+					.map(l=>[l,hi])
+					.concat( Game.limit_neighbors(hi,H.xlength).map(h=>[lo,h]).filter(x=> x[0]<=x[1]) )
+					.map( x=> Game.tricombine( x[0], x[1] ) )
+				) ;
+		}
     }
 }
 
@@ -682,6 +749,7 @@ class Game_Circle extends Game {
         super() ;
         TV = new TableView() ;
         GV = new GardenView_Circle() ;
+
 		for ( let h = 0 ; h<H.total ; ++h ) {
 			let [ lo,hi ] = Game.split( h, H.xlength ) ;
 			this.fox_moves.push( Game.wrap_neighbors(lo,H.xlength).map(l=>[l,hi])
@@ -850,6 +918,9 @@ class Overlay {
 
         // geometry
         switch (H.geometry) {
+            case "triangle":
+                document.getElementById("rarrange").innerHTML = `The ${H.xlength} foxholes are arranged in a ${H.real_offset?" offset":""} triangle.`;
+                break;
             case "circle":
                 document.getElementById("rarrange").innerHTML = `The ${H.xlength} foxholes are arranged in a${H.ylength>1?" thicker":""} ${H.real_offset?" offset":""} circle.`;
                 break;
@@ -950,6 +1021,9 @@ class Overlay {
     newgame() {
         this.view = "game" ;
         switch( H.geometry ) {
+            case "triangle":
+                G = H.offset? new Game_OffsetCircle() : new Game_Triangle() ;
+                break ;
             case "circle":
                 G = H.offset? new Game_OffsetCircle() : new Game_Circle() ;
                 break ;
