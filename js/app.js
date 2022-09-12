@@ -46,6 +46,10 @@ class Holes { // all geometry info
             // can't visit more than the total number of holes
             this.visits = this.total ;
         }
+        if ( this.geometry == "triangle" ) {
+            // ylength not used in triangle
+            this.ylength = this.xlength ;
+        }
     }
     
     checkI( x, lo, hi, def ) {
@@ -292,13 +296,35 @@ class GardenView_Triangle extends GardenView {
             width: 350*(H.xlength-1)+400,
             height: 350*H.xlength+400,
         };
-        this.background = `<rect class="svg_boundary" x="0" y="0" width="${350*(H.xlength-1)}" height="${350*(H.ylength-1)}"/>`;
+        this.background = "";
         this.transform  = f.map( (_,i) => { let [l,h]=Game.trisplit(i); return `transform="translate(${l*350},${h*350})"`} ) ;
 
         // Foxholes lower (has background) symbol (holds inhabitant) upper (for click and border)
         this.lower      = f.map( (_,i) => `<circle class="svg_hole" cx="0" cy="0" r="150" ${this.transform[i]} />`)
                            .join("");
         this.symbol     = f.map( (_,i) => `<text class="svg_symbol" x="0" y="60" id=${"symbol_"+i} ${this.transform[i]} >&nbsp;</text>`)
+                           .join("");
+        this.upper      = f.map( (_,i) => `<circle class="svg_click" cx="0" cy="0" r="150" ${this.transform[i]} id=${"upper_"+i}  onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`)
+                           .join("");
+    }
+}
+
+class GardenView_OffsetTriangle extends GardenView {
+    configure() {
+        let f = G.foxes ;
+        this.vb = { // svg viewBox dimensions
+            x: -200,
+            y: -250,
+            width: 350*(H.xlength-1)+575,
+            height: 303*H.ylength+400,
+        };
+        this.background = "";
+        this.transform  = f.map( (_,i) => { let [ll,h]=Game.trisplit(i); let l=ll+Math.trunc((H.xlength-h-1)/2) ; return `transform="translate(${l*350+(h&1)*175},${h*303})"`} ) ;
+
+        // Foxholes lower (has background) symbol (holds inhabitant) upper (for click and border)
+        this.lower      = f.map( (_,i) => `<circle class="svg_hole" cx="0" cy="0" r="150" ${this.transform[i]}/>`)
+                           .join("");
+        this.symbol     = f.map( (_,i) => `<text class="svg_symbol" x="0" y="60" id=${"symbol_"+i} ${this.transform[i]}>&nbsp;</text>`)
                            .join("");
         this.upper      = f.map( (_,i) => `<circle class="svg_click" cx="0" cy="0" r="150" ${this.transform[i]} id=${"upper_"+i}  onmouseover="this.style.stroke='red'" onmouseout="this.style.stroke='black'"/>`)
                            .join("");
@@ -572,15 +598,8 @@ class Game {
         this.fox_moves = [] ;
 	}
 	
-    start () {
-        this.inspections = [];
-        this.date = 0;
-        let current_fox = Array(H.total).fill(true);
-        let current_stats = Array(H.total).fill( 1. / H.xlength );
-        this.fox_history = [current_fox] ;
-        this.stats_history = [current_stats];
-        this.inspections = [] ;
-        TV.start() ;
+    poison_list(date) { // returns just the elements as an array
+        return this.poison_array(date).map( (p,i) => p?i:-1 ).filter( i => i>-1 ) ;
     }
 
     poison_array(date=this.date) { // returns true/false array
@@ -589,10 +608,6 @@ class Game {
             this.inspections.slice(0,date).slice(-H.poison_days).forEach( d => d.forEach( i => p[i]=true ) ) ;
         }
         return p ; 
-    }
-
-    poison_list(date) { // returns just the elements as an array
-        return this.poison_array(date).map( (p,i) => p?i:-1 ).filter( i => i>-1 ) ;
     }
 
     move( inspect ) { // holes is an array
@@ -627,6 +642,17 @@ class Game {
         // store
         this.fox_history[this.date] = current_fox;
         this.stats_history[this.date] = current_stats;
+    }
+
+    start () {
+        this.inspections = [];
+        this.date = 0;
+        let current_fox = Array(H.total).fill(true);
+        let current_stats = Array(H.total).fill( 1. / H.xlength );
+        this.fox_history = [current_fox] ;
+        this.stats_history = [current_stats];
+        this.inspections = [] ;
+        TV.start() ;
     }
 
     get foxes() {
@@ -732,14 +758,32 @@ class Game_Triangle extends Game {
         GV = new GardenView_Triangle() ;
 
         Game.triset() ; // set up row ends
-        for ( let h = 0 ; h<H.total ; ++h ) {
-			let [ lo,hi ] = Game.trisplit( h ) ;
+        for ( let holes = 0 ; holes<H.total ; ++holes ) {
+			let [ lo,hi ] = Game.trisplit( holes ) ;
 			this.fox_moves.push(
 				Game.limit_neighbors(lo,hi+1)
 					.map(l=>[l,hi])
-					.concat( Game.limit_neighbors(hi,H.xlength).map(h=>[lo,h]).filter(x=> x[0]<=x[1]) )
-					.map( x=> Game.tricombine( x[0], x[1] ) )
+					.concat( Game.limit_neighbors(hi,H.xlength).map(h=>[lo,h]).filter(([ll,hh])=> ll<=hh) )
+					.map( ([ll,hh])=> Game.tricombine( ll, hh ) )
 				) ;
+		}
+    }
+}
+
+class Game_OffsetTriangle extends Game {
+   constructor() {
+        super() ;
+        TV = new TableView() ;
+        GV = new GardenView_OffsetTriangle() ;
+
+        Game.triset() ; // set up row ends
+        for ( let holes = 0 ; holes<H.total ; ++holes ) {
+			let [ lo,hi ] = Game.trisplit( holes ) ;
+			let r = Game.limit_neighbors( lo, hi+1 ).map( l=>[l,hi] ) ; // horizontal
+			Game.limit_neighbors( hi, H.xlength ) //vertical
+				.forEach( h => Game.limit( [lo,lo+(h<hi?-1:1)], H.xlength ).map(l=>[l,h]).filter(([ll,hh])=>ll<=hh).forEach( lh => r.push( lh ) )
+				);
+			this.fox_moves.push( r.map( ([ll,hh])=> Game.tricombine( ll, hh )) );
 		}
     }
 }
@@ -750,11 +794,11 @@ class Game_Circle extends Game {
         TV = new TableView() ;
         GV = new GardenView_Circle() ;
 
-		for ( let h = 0 ; h<H.total ; ++h ) {
-			let [ lo,hi ] = Game.split( h, H.xlength ) ;
+		for ( let holes = 0 ; holes<H.total ; ++holes ) {
+			let [ lo,hi ] = Game.split( holes, H.xlength ) ;
 			this.fox_moves.push( Game.wrap_neighbors(lo,H.xlength).map(l=>[l,hi])
 				.concat( Game.limit_neighbors(hi,H.ylength).map(h=>[lo,h]) )
-				.map( x=> Game.combine( x[0], x[1], H.xlength ) )
+				.map( ([ll,hh])=> Game.combine( ll, hh, H.xlength ) )
 				);
 		}
     }
@@ -766,14 +810,14 @@ class Game_OffsetCircle extends Game {
         TV = new TableView() ;
         GV = new GardenView_OffsetCircle() ;
 
-		for ( let h = 0 ; h<H.total ; h++ ) {
-			let [ lo,hi ] = Game.split( h, H.xlength ) ;
+		for ( let holes = 0 ; holes<H.total ; holes++ ) {
+			let [ lo,hi ] = Game.split( holes, H.xlength ) ;
 			let r = Game.wrap_neighbors( lo, H.xlength ).map( l=>[l,hi] ) ; // horizontal
 			Game.limit_neighbors( hi, H.ylength ) //vertical
 				.forEach( h => [lo-(h&1),lo+1-(h&1)].forEach( l=>r.push( [Game.wrap( l, H.xlength ),h]))
 				);
 				console.log(this.fox_moves);
-			this.fox_moves.push( r.map( x=> Game.combine( x[0], x[1], H.xlength )) ) ;
+			this.fox_moves.push( r.map( ([ll,hh])=> Game.combine( ll, hh, H.xlength )) ) ;
 		}
     }
 }
@@ -784,13 +828,13 @@ class Game_Grid extends Game {
         TV = new TableView() ;
         GV = new GardenView_Grid() ;
         
-        for ( let h = 0 ; h<H.total ; ++h ) {
-			let [ lo,hi ] = Game.split( h, H.xlength ) ;
+        for ( let holes = 0 ; holes<H.total ; ++holes ) {
+			let [ lo,hi ] = Game.split( holes, H.xlength ) ;
 			this.fox_moves.push(
 				Game.limit_neighbors(lo,H.xlength)
 					.map(l=>[l,hi])
 					.concat( Game.limit_neighbors(hi,H.ylength).map(h=>[lo,h]) )
-					.map( x=> Game.combine( x[0], x[1], H.xlength) )
+					.map( ([l,h])=> Game.combine( l, h, H.xlength) )
 				) ;
 		}
     }
@@ -802,13 +846,13 @@ class Game_OffsetGrid extends Game {
         TV = new TableView() ;
         GV = new GardenView_OffsetGrid() ;
 
-        for ( let h = 0 ; h<H.total ; ++h ) {
+        for ( let holes = 0 ; holes<H.total ; ++holes ) {
 			let [ lo,hi ] = Game.split( holes, H.xlength ) ;
 			let r = Game.limit_neighbors( lo, H.xlength ).map( l=>[l,hi] ) ; // horizontal
 			Game.limit_neighbors( hi, H.ylength ) //vertical
 				.forEach( h => Game.limit( [lo-(h&1),lo+1-(h&1)], H.xlength ).forEach( l => r.push( [l,h] ) )
 				);
-			this.fox_moves.push( r.map( x=> Game.combine( x[0], x[1], H.xlength )) );
+			this.fox_moves.push( r.map( ([l,h])=> Game.combine( l, h, H.xlength )) );
 		}
     }
 }
@@ -1022,7 +1066,7 @@ class Overlay {
         this.view = "game" ;
         switch( H.geometry ) {
             case "triangle":
-                G = H.offset? new Game_OffsetCircle() : new Game_Triangle() ;
+                G = H.offset? new Game_OffsetTriangle() : new Game_Triangle() ;
                 break ;
             case "circle":
                 G = H.offset? new Game_OffsetCircle() : new Game_Circle() ;
